@@ -72,7 +72,6 @@ fig = plt.figure()
 ax1 = fig.add_subplot(111, projection='3d')
 ax1.set_xlim(0, 100)
 ax1.set_ylim(0, 100)
-#forward_kinematics(53, 78, 122, 82.23, -69.52, 144.93)
 
 ax1.set_xlabel('x axis')
 ax1.set_ylabel('y axis')
