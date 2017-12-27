@@ -51,6 +51,7 @@ def run_keyboard(server, clock):
 '''
 def run_joystick(server, name, clock):
     print("Running in joystick mode")
+    port = 15000
     joystick = None
     stretch_mode = False
     joystick_count = pygame.joystick.get_count()
@@ -86,6 +87,14 @@ def run_joystick(server, name, clock):
     stretch_params= {'pitch':0.0, 'roll':0.0, 'yaw':0.0, 'delta_x':0.0, 'delta_y':0.0}
 
     pygame.time.set_timer(USEREVENT + 1, 1000)
+    sock = None
+    if (server != None):
+        print "Connecting to server {}".format(server)
+        sock = socket.socket()
+        sock.connect((server, port))
+        if (not sock):
+            print("Failed to connect to {}:{}".format(server, port))
+            return
 
     while (done != True):
         for event in pygame.event.get():
@@ -115,6 +124,11 @@ def run_joystick(server, name, clock):
             if (event.type == pygame.JOYBUTTONUP):
                 if (event.button == Buttons.TRIGGER):
                     print("Trigger button released")
+                    stretch_params['roll'] = 0.0
+                    stretch_params['pitch'] = 0.0
+                    stretch_params['yaw'] = 0.0
+                    stretch_params['delta_x'] = 0
+                    stretch_params['delta_y'] = 0
                     stretch_mode = False
                 else:
                     print("Unhandled button released")
@@ -164,15 +178,23 @@ def run_joystick(server, name, clock):
             if (event.type == USEREVENT + 1):
                 if (stretch_mode):
                     #print("Sending rotation: {}".format(stretch_params))
-                    send_data(None, stretch_params)
-
+                    send_data(sock, stretch_params)
+    if (sock != None):
+        print("Closing connection to server")
+        sock.close()
 
 
 
 def send_data(sock, data):
-    buf = struct.pack('!fffbb', data['roll'], data['pitch'], data['yaw'], data['delta_x'], data['delta_y'])
-    print len(buf)
-    print buf
+    if (sock == None):
+        print("No socket connection detected")
+        print("data: {}".format(data))
+    else:
+        buf = struct.pack('!fffbb', data['roll'], data['pitch'], data['yaw'], data['delta_x'], data['delta_y'])
+        length = len(buf)
+        pack_len = struct.pack('!B', length) # Can pack as a byte because we will never have more than 256 bytes of data
+        sock.send(pack_len)
+        sock.send(buf)
 
 
 def main():
