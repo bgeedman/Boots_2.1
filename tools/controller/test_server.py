@@ -1,5 +1,6 @@
 import socket
 import struct
+import commands_pb2
 
 def main():
     print "Creating new testing server"
@@ -13,17 +14,17 @@ def main():
 
     print "New connection from {}".format(addr)
     while (True):
-        data = conn.recv(1) # read in 4 byte length
+        data = conn.recv(4) # read in 4 byte length
         if (not data):
             break
-        print data
         data_len, = struct.unpack('!i', data)
         print "Attempting to read {} bytes".format(data_len)
         data = conn.recv(data_len)
         if (not data):
             break
-        data = struct.unpack('!fffbb', data)
-        print "Data: {}".format(data)
+        command = commands_pb2.Stretch()
+        command.ParseFromString(data)
+        print "Data: {}".format(command)
     server.close()
 
 if __name__ == "__main__":

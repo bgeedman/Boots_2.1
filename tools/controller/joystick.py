@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import argparse
+import logging
 import pygame
 import socket
 import struct
@@ -8,12 +9,15 @@ import sys
 from enum import IntEnum
 from numpy import interp
 from pygame.locals import *
+import commands_pb2
+import binascii
 
 
 class Buttons(IntEnum):
     TRIGGER = 0
     THUMB = 1
     AUX11 = 11
+
 
 class Axis(IntEnum):
     ROLL = 0
@@ -22,14 +26,29 @@ class Axis(IntEnum):
     AUX = 3
 
 
+class Cmd(IntEnum):
+    STOP = 0
+    STAND = 1
+    WALK = 2
+    TURN = 3
+    STRETCH = 4
+    PARK = 5
+    STATUS = 6
+
+class Dir(IntEnum):
+    FORWARD = 0
+    BACKWARD = 1
+    LEFT = 2
+    RIGHT = 3
+
 
 '''
     This will be the main loop when running in keyboard mode. It currently does
     not work because pygame requires a screen to capture the keyboard events. I
     will need to research and design what kind of UI to be presented to the user.
 '''
-def run_keyboard(server, clock):
-    print("Keyboard mode is currently not working because it requires a pygame.screen")
+def run_keyboard(server):
+    logging.error("Unimplemented function called")
 
 
 
@@ -49,52 +68,44 @@ def run_keyboard(server, clock):
     axes are used to calculate a vector on which to walk.  The yaw axis is used to
     send the turn command.  To turn, you must be in neutral.
 '''
-def run_joystick(server, name, clock):
-    print("Running in joystick mode")
-    port = 15000
+def run_joystick(server, name):
+    logging.info("Running joystick mode")
+    pygame.init()
     joystick = None
     stretch_mode = False
+    sock = None
+    port = 15000
+    header = commands_pb2.Header()
+    header.cmd = Cmd.STOP
+    message = None
+
     joystick_count = pygame.joystick.get_count()
     if (joystick_count == 0):
-        print("No joysticks detected.")
-        print("Check that one is plugged in or run with --keyboard option")
+        logging.error("No joystick detected")
+        logging.error("Check that one is plugged in or run with --keyboard")
         return
     elif (joystick_count == 1):
         joystick = pygame.joystick.Joystick(0)
         joystick.init()
     else:
-        for i in range(joystick_count):
-            tmp_joystick = pygame.joystick.Joystick(i)
-            tmp_joystick_name = tmp_joystick.get_name()
-            if (name == None):
-                print("Available joysticks")
-                print("\t- {}".format(tmp_joystick_name))
-            else:
-                if (tmp_joystick_name == name):
-                    joystick = tmp_joystick
-                    joystick.init()
-                    break
-    if (joystick == None):
-        print("Failed to locate a valid joystick")
+        logging.error("To many joysticks detected")
         return
-    print("Using joystick: {}".format(joystick.get_name()))
-    print("Available buttons: {}".format(joystick.get_numbuttons()))
-    print("Available axis: {}".format(joystick.get_numaxes()))
-    print("Available hats: {}".format(joystick.get_numhats()))
-    print("------------------------------------------------------")
+
+    if (joystick == None):
+        loggign.critical("Failed to locate a valid joystick")
+        return
     done = False
 
-    stretch_params= {'pitch':0.0, 'roll':0.0, 'yaw':0.0, 'delta_x':0.0, 'delta_y':0.0}
-
     pygame.time.set_timer(USEREVENT + 1, 1000)
-    sock = None
+
     if (server != None):
-        print "Connecting to server {}".format(server)
+        logging.info("Connecting to server {}".format(server))
         sock = socket.socket()
         sock.connect((server, port))
         if (not sock):
-            print("Failed to connect to {}:{}".format(server, port))
+            logging.error("Failed to connect to {}:{}".format(server, port))
             return
+
 
     while (done != True):
         for event in pygame.event.get():
@@ -109,12 +120,19 @@ def run_joystick(server, name, clock):
             '''
             if (event.type == pygame.JOYBUTTONDOWN):
                 if (event.button == Buttons.TRIGGER):
-                    print("Trigger button pressed")
                     stretch_mode = True
+                    header.cmd = Cmd.STRETCH
+                    message = commands_pb2.Stretch()
+                    message.roll = 0.0
+                    message.pitch = 0.0
+                    message.yaw = 0.0
+                    message.delta_x = 0
+                    message.delta_y = 0
                 elif (event.button == Buttons.AUX11):
                     done = True
                 else:
-                    print("Unhandled button pressed")
+                    logging.warning("Unhandled button down event")
+
 
             '''
                 We have a button released, and like the button press, handle each
@@ -123,15 +141,12 @@ def run_joystick(server, name, clock):
             '''
             if (event.type == pygame.JOYBUTTONUP):
                 if (event.button == Buttons.TRIGGER):
-                    print("Trigger button released")
-                    stretch_params['roll'] = 0.0
-                    stretch_params['pitch'] = 0.0
-                    stretch_params['yaw'] = 0.0
-                    stretch_params['delta_x'] = 0
-                    stretch_params['delta_y'] = 0
+                    header.cmd = Cmd.STOP
+                    message = None
                     stretch_mode = False
                 else:
-                    print("Unhandled button released")
+                    logging.warning("Unhandled button up event")
+
 
             '''
                 We have an axis motion event. This indicates one of the joystick
@@ -149,14 +164,37 @@ def run_joystick(server, name, clock):
             if (event.type == pygame.JOYAXISMOTION):
                 if (stretch_mode):
                     if (event.axis == Axis.ROLL):
-                        stretch_params['roll'] = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
+                        message.roll = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
                     if (event.axis == Axis.PITCH):
-                        stretch_params['pitch'] = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
+                        message.pitch = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
                     if (event.axis == Axis.YAW):
-                        stretch_params['yaw'] = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
+                        message.yaw = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
                 else:
-                    ''' This is where we would create the walk vector'''
-                    pass
+                    ''' This is where we would create the walk vector, or the turn event'''
+                    if (event.axis == Axis.PITCH and header.cmd != Cmd.TURN):
+                        if (event.value > 0.5 or event.value < -0.5):
+                            header.cmd = Cmd.WALK
+                            if (not isinstance(message, commands_pb2.Walk)):
+                                message = commands_pb2.Walk()
+                            if (event.value > 0.5):
+                                message.dir = Dir.BACKWARD
+                            else:
+                                message.dir = Dir.FORWARD
+                        else:
+                            header.cmd = Cmd.STOP
+                            message = None
+                    if (event.axis == Axis.YAW and header.cmd != Cmd.WALK):
+                        if (event.value > 0.5 or event.value < -0.5):
+                            header.cmd = Cmd.TURN
+                            if (not isinstance(message, commands_pb2.Turn)):
+                                message = commands_pb2.Turn()
+                            if (event.value > 0.5):
+                                message.dir = Dir.RIGHT
+                            else:
+                                message.dir = Dir.LEFT
+                        else:
+                            header.cmd = Cmd.STOP
+                            message = None
 
             '''
                 The hat on top of joystick has moved.  If in stretch mode, this
@@ -166,8 +204,9 @@ def run_joystick(server, name, clock):
             '''
             if (event.type == pygame.JOYHATMOTION):
                 if (stretch_mode):
-                    stretch_params['delta_x'] = event.value[0]
-                    stretch_params['delta_y'] = event.value[1]
+                    message.delta_x = event.value[0]
+                    message.delta_y = event.value[1]
+
 
             '''
                 This is a timer event set to trigger 10 times every second. The
@@ -176,25 +215,45 @@ def run_joystick(server, name, clock):
                 or if we should just accept the XTREME traffic.
             '''
             if (event.type == USEREVENT + 1):
-                if (stretch_mode):
-                    #print("Sending rotation: {}".format(stretch_params))
-                    send_data(sock, stretch_params)
+                send_message(sock, header, message)
+
+
     if (sock != None):
-        print("Closing connection to server")
+        logging.info("Closing connection to server")
         sock.close()
+    pygame.quit()
 
 
 
-def send_data(sock, data):
-    if (sock == None):
-        print("No socket connection detected")
-        print("data: {}".format(data))
+
+
+
+'''
+    Send out a new message to the server. The header contains the command type
+    and the length of the proceeding message. If no message is attached, the
+    length will be 0 and we only send the header.
+'''
+def send_message(sock, header, message):
+    logging.debug("Sending new message")
+    if (sock):
+        message_len = 0
+        if (message):
+            message_data = message.SerializeToString()
+            message_len = len(message_data)
+        header.len = message_len
+        header_data = header.SerializeToString()
+        header_len = len(header_data)
+        logging.debug("Header length: {}".format(header_len))
+        logging.debug("Header data: 0x{}".format(binascii.hexlify(header_data)))
+        sock.send(struct.pack('!i', header_len))
+        sock.send(header_data)
+        if (message):
+            logging.debug("Message data: 0x{}".format(binascii.hexlify(message_data)))
+            sock.send(message_data)
     else:
-        buf = struct.pack('!fffbb', data['roll'], data['pitch'], data['yaw'], data['delta_x'], data['delta_y'])
-        length = len(buf)
-        pack_len = struct.pack('!B', length) # Can pack as a byte because we will never have more than 256 bytes of data
-        sock.send(pack_len)
-        sock.send(buf)
+        logging.debug("Header: {}".format(header))
+        logging.debug("Message: {}".format(message))
+
 
 
 def main():
@@ -202,15 +261,14 @@ def main():
     parser.add_argument('--joystick', help="name of joystick", type=str)
     parser.add_argument('--keyboard', help="run keyboard interface", action="store_true")
     parser.add_argument('--server', help='server IP address to connect', type=str)
-    parser.add_argument('--verbose', help="increase output verbosity", action="store_true")
     args = parser.parse_args()
-    pygame.init()
-    clock = pygame.time.Clock()
+    logging.basicConfig(format='%(asctime)-15s [%(levelname)s]: %(message)s',
+                        level=logging.DEBUG);
+
     if (args.keyboard):
-        run_keyboard(args.server, clock)
+        run_keyboard(args.server)
     else:
-        run_joystick(args.server, args.joystick, clock)
-    pygame.quit()
+        run_joystick(args.server, args.joystick)
 
 
 
