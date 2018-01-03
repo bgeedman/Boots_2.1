@@ -1,48 +1,30 @@
 /*
  * Message definitions for boots_2.1.  Use the Makefile to build the required
- * import files.  Must always send the header that defines the message before
- * sending the actual message.  This allows for proper message construction
- * before reading.
+ * import files.
 */
 
 syntax = "proto2";
 
-message Header {
-    enum command {
+message Command {
+    enum type {
         STOP = 0;
         STAND = 1;
         WALK = 2;
         TURN = 3;
         STRETCH = 4;
         PARK = 5;
-        STATUS = 6;
     }
-    required command cmd = 1;
-    required int32 len = 2;
-}
-
-message Walk {
     enum direction {
         FORWARD = 0;
         BACKWARD = 1;
         LEFT = 2;
         RIGHT = 3;
     }
-    required direction dir = 1;
-}
-
-message Turn {
-    enum direction {
-        LEFT = 2;
-        RIGHT = 3;
-    }
-    required direction dir = 1;
-}
-
-message Stretch {
-    required float roll = 1;
-    required float pitch = 2;
-    required float yaw = 3;
-    required int32 delta_x = 4;
-    required int32 delta_y = 5;
+    required type cmd = 1;
+    optional direction dir = 2;
+    optional float roll = 3;
+    optional float pitch = 4;
+    optional float yaw = 5;
+    optional int32 delta_x = 6;
+    optional int32 delta_y = 7;
 }

@@ -10,14 +10,13 @@ LDIR = -L$$HOME/gsl/lib
 PROTO = $$HOME/protobuf/bin/protoc
 PROTO_C = /usr/bin/protoc-c
 
-PROJECT_ROOT = $$HOME/Documents/coding_projects/Boots_2.1
 
 default: all
 
 protobuf: commands.proto
 	@echo "======================================"
 	@echo "Compiling new protobuf files..."
-	$(PROTO) --python_out=$(PROJECT_ROOT)/tools/controller $^
+	$(PROTO) --python_out=./controller $^
 	$(PROTO_C) --c_out=./ $^
 	@echo "======================================"
 
@@ -56,6 +55,6 @@ clean:
 	@echo "Cleaning up protobuf files..."
 	rm commands.pb-c.c
 	rm commands.pb-c.h
-	rm $(PROJECT_ROOT)/tools/controller/*.pyc
-	rm $(PROJECT_ROOT)/tools/controller/commands_pb2.py
+	rm ./controller/*.pyc
+	rm ./controller/commands_pb2.py
 	@echo "======================================"
