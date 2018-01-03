@@ -10,7 +10,6 @@ from enum import IntEnum
 from numpy import interp
 from pygame.locals import *
 import commands_pb2
-import binascii
 
 
 class Buttons(IntEnum):
@@ -26,7 +25,7 @@ class Axis(IntEnum):
     AUX = 3
 
 
-class Cmd(IntEnum):
+class Cmds(IntEnum):
     STOP = 0
     STAND = 1
     WALK = 2
@@ -75,9 +74,9 @@ def run_joystick(server, name):
     stretch_mode = False
     sock = None
     port = 15000
-    header = commands_pb2.Header()
-    header.cmd = Cmd.STOP
-    message = None
+
+    command = commands_pb2.Command()
+    command.cmd = Cmds.STOP
 
     joystick_count = pygame.joystick.get_count()
     if (joystick_count == 0):
@@ -119,15 +118,9 @@ def run_joystick(server, name):
                 which will quit the program.
             '''
             if (event.type == pygame.JOYBUTTONDOWN):
-                if (event.button == Buttons.TRIGGER):
+                if (event.button == Buttons.TRIGGER and command.cmd == Cmds.STOP):
                     stretch_mode = True
-                    header.cmd = Cmd.STRETCH
-                    message = commands_pb2.Stretch()
-                    message.roll = 0.0
-                    message.pitch = 0.0
-                    message.yaw = 0.0
-                    message.delta_x = 0
-                    message.delta_y = 0
+                    command.cmd = Cmds.STRETCH
                 elif (event.button == Buttons.AUX11):
                     done = True
                 else:
@@ -141,9 +134,13 @@ def run_joystick(server, name):
             '''
             if (event.type == pygame.JOYBUTTONUP):
                 if (event.button == Buttons.TRIGGER):
-                    header.cmd = Cmd.STOP
-                    message = None
                     stretch_mode = False
+                    command.cmd = Cmds.STOP
+                    command.roll = 0.0
+                    command.pitch = 0.0
+                    command.yaw = 0.0
+                    command.delta_x = 0
+                    command.delta_y = 0
                 else:
                     logging.warning("Unhandled button up event")
 
@@ -164,37 +161,31 @@ def run_joystick(server, name):
             if (event.type == pygame.JOYAXISMOTION):
                 if (stretch_mode):
                     if (event.axis == Axis.ROLL):
-                        message.roll = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
+                        command.roll = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
                     if (event.axis == Axis.PITCH):
-                        message.pitch = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
+                        command.pitch = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
                     if (event.axis == Axis.YAW):
-                        message.yaw = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
+                        command.yaw = interp(event.value, [-1.0, 1.0], [-30.0, 30.0])
                 else:
-                    ''' This is where we would create the walk vector, or the turn event'''
-                    if (event.axis == Axis.PITCH and header.cmd != Cmd.TURN):
-                        if (event.value > 0.5 or event.value < -0.5):
-                            header.cmd = Cmd.WALK
-                            if (not isinstance(message, commands_pb2.Walk)):
-                                message = commands_pb2.Walk()
-                            if (event.value > 0.5):
-                                message.dir = Dir.BACKWARD
-                            else:
-                                message.dir = Dir.FORWARD
+                    ''' This is where we would create the walk vector, or the turn event '''
+                    if (event.axis == Axis.PITCH and command.cmd != Cmds.TURN):
+                        if (event.value > 0.5):
+                            command.cmd = Cmds.WALK
+                            command.dir = Dir.BACKWARD
+                        elif (event.value < -0.5) :
+                            command.cmd = Cmds.WALK
+                            command.dir = Dir.FORWARD
                         else:
-                            header.cmd = Cmd.STOP
-                            message = None
-                    if (event.axis == Axis.YAW and header.cmd != Cmd.WALK):
-                        if (event.value > 0.5 or event.value < -0.5):
-                            header.cmd = Cmd.TURN
-                            if (not isinstance(message, commands_pb2.Turn)):
-                                message = commands_pb2.Turn()
-                            if (event.value > 0.5):
-                                message.dir = Dir.RIGHT
-                            else:
-                                message.dir = Dir.LEFT
+                            command.cmd = Cmds.STOP
+                    if (event.axis == Axis.YAW and command.cmd != Cmds.WALK):
+                        if (event.value > 0.5):
+                            command.cmd = Cmds.TURN
+                            command.dir = Dir.RIGHT
+                        elif (event.value < -0.5):
+                            command.cmd = Cmds.TURN
+                            command.dir = Dir.LEFT
                         else:
-                            header.cmd = Cmd.STOP
-                            message = None
+                            command.cmd = Cmds.STOP
 
             '''
                 The hat on top of joystick has moved.  If in stretch mode, this
@@ -204,9 +195,8 @@ def run_joystick(server, name):
             '''
             if (event.type == pygame.JOYHATMOTION):
                 if (stretch_mode):
-                    message.delta_x = event.value[0]
-                    message.delta_y = event.value[1]
-
+                    command.delta_x = event.value[0]
+                    command.delta_y = event.value[1]
 
             '''
                 This is a timer event set to trigger 10 times every second. The
@@ -215,7 +205,7 @@ def run_joystick(server, name):
                 or if we should just accept the XTREME traffic.
             '''
             if (event.type == USEREVENT + 1):
-                send_message(sock, header, message)
+                send_command(sock, command)
 
 
     if (sock != None):
@@ -226,34 +216,16 @@ def run_joystick(server, name):
 
 
 
-
-
-'''
-    Send out a new message to the server. The header contains the command type
-    and the length of the proceeding message. If no message is attached, the
-    length will be 0 and we only send the header.
-'''
-def send_message(sock, header, message):
-    logging.debug("Sending new message")
+def send_command(sock, command):
     if (sock):
-        message_len = 0
-        if (message):
-            message_data = message.SerializeToString()
-            message_len = len(message_data)
-        header.len = message_len
-        header_data = header.SerializeToString()
-        header_len = len(header_data)
-        logging.debug("Header length: {}".format(header_len))
-        logging.debug("Header data: 0x{}".format(binascii.hexlify(header_data)))
-        sock.send(struct.pack('!i', header_len))
-        sock.send(header_data)
-        if (message):
-            logging.debug("Message data: 0x{}".format(binascii.hexlify(message_data)))
-            sock.send(message_data)
+        cmd_data = command.SerializeToString()
+        cmd_len = len(cmd_data)
+        logging.debug("Sending len: {}".format(cmd_len))
+        sock.send(struct.pack('!i',cmd_len))
+        logging.debug("Sending cmd: {}".format(command))
+        sock.send(cmd_data)
     else:
-        logging.debug("Header: {}".format(header))
-        logging.debug("Message: {}".format(message))
-
+        logging.debug("Command:\n{}".format(command))
 
 
 def main():

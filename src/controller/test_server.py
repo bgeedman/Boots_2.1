@@ -22,7 +22,7 @@ def main():
         data = conn.recv(data_len)
         if (not data):
             break
-        command = commands_pb2.Stretch()
+        command = commands_pb2.Command()
         command.ParseFromString(data)
         print "Data: {}".format(command)
     server.close()
