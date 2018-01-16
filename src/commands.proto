@@ -13,6 +13,7 @@ message Command {
         TURN = 3;
         STRETCH = 4;
         PARK = 5;
+        QUIT = 6;
     }
     enum direction {
         FORWARD = 0;

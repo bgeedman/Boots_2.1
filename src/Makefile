@@ -1,10 +1,10 @@
-OBJS = commands.pb-c.o genesis.o kinematics.o leg.o logger.o servo.o tools.o
+OBJS = commands.pb-c.o kinematics.o leg.o logger.o servo.o tools.o server.o setup.o states.o
 TARGET = testing
 CC = gcc
 DEBUG = -g
-CFLAGS = $(DEBUG) -c -Wall -DLOG_USE_COLOR
+CFLAGS = $(DEBUG) -c -Wall
 LFLAGS = $(DEBUG) -Wall
-LIBS = -lm -lgsl -lgslcblas -lprotobuf-c
+LIBS = -lm -lgsl -lgslcblas -lprotobuf-c -pthread
 IDIR = -I$$HOME/gsl/include
 LDIR = -L$$HOME/gsl/lib
 PROTO = $$HOME/protobuf/bin/protoc
@@ -23,11 +23,8 @@ protobuf: commands.proto
 tester: $(OBJS)
 	$(CC) $(LFLAGS) $(IDIR) $(LDIR) $(OBJS) main.c -o $(TARGET) $(LIBS)
 
-commands.pb-c.o: commands.pb-c.c commands.pb-c.h
+commands.pb-c.o: protobuf commands.pb-c.c commands.pb-c.h
 	$(CC) $(CFLAGS) -o $@ commands.pb-c.c -lprotobuf-c
-
-genesis.o: genesis.c genesis.h leg.h leg_constants.h logger.h
-	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ genesis.c $(LIBS)
 
 kinematics.o: kinematics.c kinematics.h logger.h tools.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ kinematics.c $(LIBS)
@@ -43,6 +40,15 @@ servo.o: servo.c servo.h logger.h
 
 tools.o: tools.c tools.h logger.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ tools.c $(LIBS)
+
+server.o: server.c server.h commands.pb-c.h logger.h
+	$(CC) $(CFLAGS) -o $@ server.c $(LIBS)
+
+setup.o: setup.c setup.h leg.h
+	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ setup.c $(LIBS)
+
+states.o: states.c states.h leg.h logger.h server.h setup.h
+	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ states.c $(LIBS)
 
 .PHONY: clean
 

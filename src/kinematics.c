@@ -77,15 +77,6 @@ int solve_kinematics_geometric(Leg *leg) {
 }
 
 
-int solve_kinematics_ccd(Leg *leg) {
-    return 0;
-}
-
-int solve_kinematics_pseudoinverse_jacobian(Leg *leg) {
-    return 0;
-}
-
-
 static float solve_hypotenuse(float a, float b) {
     // TODO: ALL KINDS OF ERROR CHECKING
     float x = powf(a, 2);

@@ -15,6 +15,7 @@ import commands_pb2
 class Buttons(IntEnum):
     TRIGGER = 0
     THUMB = 1
+    AUX06 = 6
     AUX11 = 11
 
 
@@ -32,7 +33,8 @@ class Cmds(IntEnum):
     TURN = 3
     STRETCH = 4
     PARK = 5
-    STATUS = 6
+    QUIT = 6
+
 
 class Dir(IntEnum):
     FORWARD = 0
@@ -122,7 +124,10 @@ def run_joystick(server, name):
                     stretch_mode = True
                     command.cmd = Cmds.STRETCH
                 elif (event.button == Buttons.AUX11):
+                    command.cmd = Cmds.QUIT
                     done = True
+                elif (event.button == Buttons.AUX06):
+                    command.cmd = Cmds.STAND
                 else:
                     logging.warning("Unhandled button down event")
 
@@ -133,7 +138,8 @@ def run_joystick(server, name):
                 mode. Should leaving stretch mode recenter the body?
             '''
             if (event.type == pygame.JOYBUTTONUP):
-                if (event.button == Buttons.TRIGGER):
+                if (event.button == Buttons.TRIGGER or
+                    event.button == Buttons.AUX06):
                     stretch_mode = False
                     command.cmd = Cmds.STOP
                     command.roll = 0.0
@@ -207,6 +213,8 @@ def run_joystick(server, name):
             if (event.type == USEREVENT + 1):
                 send_command(sock, command)
 
+    # Send the one final command
+    send_command(sock, command)
 
     if (sock != None):
         logging.info("Closing connection to server")

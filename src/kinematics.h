@@ -6,7 +6,5 @@
 #include "leg.h"
 
 int solve_kinematics_geometric(Leg *leg);
-int solve_kinematics_ccd(Leg *leg);
-int solve_kinematics_pseudoinverse_jacobian(Leg *leg);
 
 #endif

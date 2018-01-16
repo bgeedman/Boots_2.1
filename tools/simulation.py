@@ -68,6 +68,9 @@ def animate(i):
     data = np.loadtxt("../src/foobar")
     forward_kinematics(*data)
 
+
+
+
 fig = plt.figure()
 ax1 = fig.add_subplot(111, projection='3d')
 ax1.set_xlim(0, 100)
