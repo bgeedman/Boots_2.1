@@ -11,6 +11,11 @@ PROTO = $$HOME/protobuf/bin/protoc
 PROTO_C = /usr/bin/protoc-c
 
 
+all:
+	make clean
+	make protobuf
+	make tester
+
 default: all
 
 protobuf: commands.proto
@@ -55,12 +60,12 @@ states.o: states.c states.h leg.h logger.h server.h setup.h
 clean:
 	@echo "======================================"
 	@echo "Cleaning up object files..."
-	rm *.o
+	-rm -f *.o
 	@echo "Cleaning up executables..."
-	rm $(TARGET)
+	-rm $(TARGET)
 	@echo "Cleaning up protobuf files..."
-	rm commands.pb-c.c
-	rm commands.pb-c.h
-	rm ./controller/*.pyc
-	rm ./controller/commands_pb2.py
+	-rm -f commands.pb-c.c
+	-rm -f commands.pb-c.h
+	-rm -f ./controller/*.pyc
+	-rm -f ./controller/commands_pb2.py
 	@echo "======================================"
