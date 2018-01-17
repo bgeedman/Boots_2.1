@@ -9,7 +9,7 @@
 #include "leg.h"
 #include "logger.h"
 #include "server.h"
-#include "setup.h"
+#include "updater.h"
 #include "states.h"
 #include "commands.pb-c.h"
 
@@ -29,49 +29,28 @@ int (*state_table[])(state_args *) = {
 
 int setup_state(state_args *arg) {
     log_trace("Entering setup state");
-    serv_args_t *serv_a; // this is a memory leak
     if ((arg->legs = malloc(4 * sizeof(Leg *))) == NULL) {
         return END;
     }
 
-    if ((serv_a = malloc(sizeof(serv_args_t))) == NULL) {
-        log_fatal("failed to create space for the server args");
-        return END;
-    }
-
-    int str_len = strlen(arg->address) + 1;
-    serv_a->address = malloc(str_len);
-    if (serv_a->address == NULL) {
-        log_fatal("Failed to malloc space in server args");
-        free(serv_a);
-        return END;
-    }
-
-    strncpy(serv_a->address, arg->address, str_len);
-    serv_a->port = arg->port;
-    serv_a->cmd = &(arg->cmd);
-
-
-
     log_info("Initializing legs");
-    if (setup_leg_init(arg->legs)) {
+    if (leg_init(arg->legs)) {
         log_fatal("Failed to initialize legs");
-        free(serv_a->address);
-        free(serv_a);
         return END;
     }
 
-
-    log_debug("Initializing server");
-    if (pthread_create(&(arg->tid), NULL, server_thread, serv_a)) {
-        log_fatal("Failed to initialize server");
-        free(serv_a->address);
-        free(serv_a);
+    log_info("Setting up the server thread...");
+    if (create_server_thread(arg->address, arg->port, &(arg->cmd))) {
+        log_fatal("Failed to setup server thread");
         return END;
     }
 
+    log_info("Setting up timer callback...");
+    if (create_timer_callback(0.5, arg->legs)) {
+        log_fatal("Failed to create timer callback");
+        return END;
+    }
 
-    // setup the timer callback
     log_debug("Set sequence to UNKNOWN_TO_PARK");
     return PARK;
 }
@@ -236,8 +215,6 @@ int cleanup_state(state_args *arg) {
 
 int end_state(state_args *arg) {
     log_trace("Entering end state");
-    if (pthread_join(arg->tid, NULL)) {
-        log_error("Failed to join thread");
-    }
+    log_debug("Do we need to clean anything up?");
     return EXIT;
 }

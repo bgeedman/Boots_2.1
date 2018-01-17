@@ -48,6 +48,6 @@ void leg_print_details(Leg *leg);
 
 
 int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z);
-
+int leg_init(Leg **legs);
 
 #endif

@@ -13,7 +13,18 @@ static float solve_hypotenuse(float a, float b);
 static float law_of_cosines(float a, float b, float c);
 
 
-int solve_kinematics_geometric(Leg *leg) {
+/*
+ * Function: kinematics_geometric
+ * ==============================
+ * Input:
+ *  leg - pointer to leg that we need to solve kinematic for
+ * Return: Success or failure
+ *
+ * This function solves the inverse kinematics for a passed in leg.  Solution
+ * will be for the leg local end point. The solution will be stored in each of
+ * the leg servos by setting the desired angle.
+ */
+int kinematics_geometric(Leg *leg) {
     float length;
     float HF;
     float theta;

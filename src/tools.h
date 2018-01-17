@@ -10,6 +10,8 @@
 #include <math.h>
 #include <gsl/gsl_matrix.h>
 
+#include "leg.h"
+
 // Converts degrees to radians.
 #define degreesToRadians(angleDegrees) (angleDegrees * M_PI / 180.0)
 
@@ -17,5 +19,8 @@
 #define radiansToDegrees(angleRadians) (angleRadians * 180.0 / M_PI)
 
 void tools_matrix_print(char *label, gsl_matrix *matrix);
+
+
+void generate_command_string(Leg **legs);
 
 #endif

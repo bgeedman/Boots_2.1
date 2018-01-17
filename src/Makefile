@@ -1,10 +1,10 @@
-OBJS = commands.pb-c.o kinematics.o leg.o logger.o servo.o tools.o server.o setup.o states.o
+OBJS = commands.pb-c.o kinematics.o leg.o logger.o servo.o tools.o server.o states.o updater.o
 TARGET = testing
 CC = gcc
 DEBUG = -g
 CFLAGS = $(DEBUG) -c -Wall
 LFLAGS = $(DEBUG) -Wall
-LIBS = -lm -lgsl -lgslcblas -lprotobuf-c -pthread
+LIBS = -lm -lgsl -lgslcblas -lprotobuf-c -pthread -lrt
 IDIR = -I$$HOME/gsl/include
 LDIR = -L$$HOME/gsl/lib
 PROTO = $$HOME/protobuf/bin/protoc
@@ -49,11 +49,12 @@ tools.o: tools.c tools.h logger.h
 server.o: server.c server.h commands.pb-c.h logger.h
 	$(CC) $(CFLAGS) -o $@ server.c $(LIBS)
 
-setup.o: setup.c setup.h leg.h
-	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ setup.c $(LIBS)
-
-states.o: states.c states.h leg.h logger.h server.h setup.h
+states.o: states.c states.h leg.h logger.h server.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ states.c $(LIBS)
+
+updater.o: updater.c updater.h logger.h
+	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ updater.c $(LIBS)
+
 
 .PHONY: clean
 

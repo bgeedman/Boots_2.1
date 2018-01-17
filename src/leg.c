@@ -3,6 +3,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_blas.h>
 #include "leg.h"
+#include "leg_constants.h"
 #include "logger.h"
 #include "tools.h"
 
@@ -214,6 +215,7 @@ void leg_set_servo_range(Leg *leg, int servo, uint16_t min_pos, uint16_t max_pos
  *  leg - pointer to leg structure
  *  servo - servo to update
  *  pos - zero position
+ * Return: N/A
  *
  *  This function sets the zero position for a servo.  The zero position is
  *  defined as the position of the servo at 0 degrees
@@ -248,6 +250,11 @@ void leg_set_servo_angle(Leg *leg, int servo, float angle) {
 /*
  * Function: leg_destroy
  * =====================
+ * Input:
+ *  leg - pointer to free all space
+ * Return: N/A
+ *
+ * This function frees up space used by a leg
  */
 void leg_destroy(Leg *leg) {
     log_debug("Destroying leg");
@@ -262,6 +269,19 @@ void leg_destroy(Leg *leg) {
     free(leg);
 }
 
+
+
+/*
+ * Function: leg_print_details
+ * ===========================
+ * Input:
+ *  leg - pointer to leg to print details for
+ * Return: N/A
+ *
+ * This function prints a legs various fields
+ *
+ * TODO: Need to make the output a bit more appealing
+ */
 void leg_print_details(Leg *leg) {
     char buf[1024];
     snprintf(buf, 1024,
@@ -284,6 +304,20 @@ void leg_print_details(Leg *leg) {
 }
 
 
+
+/*
+ * Function: leg_set_end_point
+ * ===========================
+ * Input:
+ *  leg - pointer to leg for the end point
+ *  x   - x position (WORLD COORDINATE)
+ *  y   - y position (WORLD COORDINATE)
+ *  z   - z position (WORLD COORDINATE)
+ * Return: N/A
+ *
+ * This function sets the desired end point for leg. Sets the point world and
+ * local coordinate.
+ */
 int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z) {
     if (leg->world_end_point == NULL) {
         if ((leg->world_end_point = gsl_matrix_alloc(4, 1)) == NULL) {
@@ -317,4 +351,156 @@ int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z) {
 
     gsl_matrix_free(tmp);
     return 0;
+}
+
+
+
+/*
+ * Function: leg_init
+ * ==================
+ * Input:
+ *  legs - pointer to array of pointers of legs to init
+ * Return: Success code
+ *
+ * This function creates all the legs needed and initializes them with the
+ * values defined in leg_constants.h
+ */
+int leg_init(Leg **legs) {
+    legs[FRONT_LEFT] = leg_create("Front Left");
+    legs[FRONT_RIGHT] = leg_create("Front Right");
+    legs[BACK_LEFT] = leg_create("Back Left");
+    legs[BACK_RIGHT] = leg_create("Back Right");
+
+    if (legs[FRONT_LEFT] == NULL || legs[FRONT_RIGHT] == NULL ||
+        legs[BACK_LEFT] == NULL || legs[BACK_RIGHT] == NULL)
+    {
+        goto ABORT;
+    }
+
+
+    leg_set_rotation(legs[FRONT_LEFT], FRONT_LEFT_ROTATION);
+    leg_set_translation(legs[FRONT_LEFT], FRONT_LEFT_DELTA_X,
+                        FRONT_LEFT_DELTA_Y, FRONT_LEFT_DELTA_Z);
+    leg_set_coxa(legs[FRONT_LEFT], FRONT_LEFT_COXA);
+    leg_set_femur(legs[FRONT_LEFT], FRONT_LEFT_FEMUR);
+    leg_set_tibia(legs[FRONT_LEFT], FRONT_LEFT_TIBIA);
+    if (leg_add_servo(legs[FRONT_LEFT], SHOULDER, FRONT_LEFT_SHOULDER_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[FRONT_LEFT], FEMUR, FRONT_LEFT_FEMUR_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[FRONT_LEFT], TIBIA, FRONT_LEFT_TIBIA_PIN))
+        goto ABORT;
+    leg_set_servo_range(legs[FRONT_LEFT], SHOULDER,
+                        FRONT_LEFT_MIN_SHOULDER_POSITION,
+                        FRONT_LEFT_MAX_SHOULDER_POSITION);
+    leg_set_servo_range(legs[FRONT_LEFT], FEMUR,
+                        FRONT_LEFT_MIN_FEMUR_POSITION,
+                        FRONT_LEFT_MAX_FEMUR_POSITION);
+    leg_set_servo_range(legs[FRONT_LEFT], TIBIA,
+                        FRONT_LEFT_MIN_TIBIA_POSITION,
+                        FRONT_LEFT_MAX_TIBIA_POSITION);
+    leg_set_servo_zero_position(legs[FRONT_LEFT], SHOULDER,
+                        FRONT_LEFT_SHOULDER_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[FRONT_LEFT], FEMUR,
+                        FRONT_LEFT_FEMUR_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[FRONT_LEFT], TIBIA,
+                        FRONT_LEFT_TIBIA_ZERO_POSITION);
+
+
+    leg_set_rotation(legs[FRONT_RIGHT], FRONT_RIGHT_ROTATION);
+    leg_set_translation(legs[FRONT_RIGHT], FRONT_RIGHT_DELTA_X,
+                        FRONT_RIGHT_DELTA_Y, FRONT_RIGHT_DELTA_Z);
+    leg_set_coxa(legs[FRONT_RIGHT], FRONT_RIGHT_COXA);
+    leg_set_femur(legs[FRONT_RIGHT], FRONT_RIGHT_FEMUR);
+    leg_set_tibia(legs[FRONT_RIGHT], FRONT_RIGHT_TIBIA);
+    if (leg_add_servo(legs[FRONT_RIGHT], SHOULDER, FRONT_RIGHT_SHOULDER_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[FRONT_RIGHT], FEMUR, FRONT_RIGHT_FEMUR_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[FRONT_RIGHT], TIBIA, FRONT_RIGHT_TIBIA_PIN))
+        goto ABORT;
+    leg_set_servo_range(legs[FRONT_RIGHT], SHOULDER,
+                        FRONT_RIGHT_MIN_SHOULDER_POSITION,
+                        FRONT_RIGHT_MAX_SHOULDER_POSITION);
+    leg_set_servo_range(legs[FRONT_RIGHT], FEMUR,
+                        FRONT_RIGHT_MIN_FEMUR_POSITION,
+                        FRONT_RIGHT_MAX_FEMUR_POSITION);
+    leg_set_servo_range(legs[FRONT_RIGHT], TIBIA,
+                        FRONT_RIGHT_MIN_TIBIA_POSITION,
+                        FRONT_RIGHT_MAX_TIBIA_POSITION);
+    leg_set_servo_zero_position(legs[FRONT_RIGHT], SHOULDER,
+                        FRONT_RIGHT_SHOULDER_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[FRONT_RIGHT], FEMUR,
+                        FRONT_RIGHT_FEMUR_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[FRONT_RIGHT], TIBIA,
+                        FRONT_RIGHT_TIBIA_ZERO_POSITION);
+
+
+
+    leg_set_rotation(legs[BACK_LEFT], BACK_LEFT_ROTATION);
+    leg_set_translation(legs[BACK_LEFT], BACK_LEFT_DELTA_X,
+                        BACK_LEFT_DELTA_Y, BACK_LEFT_DELTA_Z);
+    leg_set_coxa(legs[BACK_LEFT], BACK_LEFT_COXA);
+    leg_set_femur(legs[BACK_LEFT], BACK_LEFT_FEMUR);
+    leg_set_tibia(legs[BACK_LEFT], BACK_LEFT_TIBIA);
+    if (leg_add_servo(legs[BACK_LEFT], SHOULDER, BACK_LEFT_SHOULDER_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[BACK_LEFT], FEMUR, BACK_LEFT_FEMUR_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[BACK_LEFT], TIBIA, BACK_LEFT_TIBIA_PIN))
+        goto ABORT;
+    leg_set_servo_range(legs[BACK_LEFT], SHOULDER,
+                        BACK_LEFT_MIN_SHOULDER_POSITION,
+                        BACK_LEFT_MAX_SHOULDER_POSITION);
+    leg_set_servo_range(legs[BACK_LEFT], FEMUR,
+                        BACK_LEFT_MIN_FEMUR_POSITION,
+                        BACK_LEFT_MAX_FEMUR_POSITION);
+    leg_set_servo_range(legs[BACK_LEFT], TIBIA,
+                        BACK_LEFT_MIN_TIBIA_POSITION,
+                        BACK_LEFT_MAX_TIBIA_POSITION);
+    leg_set_servo_zero_position(legs[BACK_LEFT], SHOULDER,
+                        BACK_LEFT_SHOULDER_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[BACK_LEFT], FEMUR,
+                        BACK_LEFT_FEMUR_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[BACK_LEFT], TIBIA,
+                        BACK_LEFT_TIBIA_ZERO_POSITION);
+
+
+    leg_set_rotation(legs[BACK_RIGHT], BACK_RIGHT_ROTATION);
+    leg_set_translation(legs[BACK_RIGHT], BACK_RIGHT_DELTA_X,
+                        BACK_RIGHT_DELTA_Y, BACK_RIGHT_DELTA_Z);
+    leg_set_coxa(legs[BACK_RIGHT], BACK_RIGHT_COXA);
+    leg_set_femur(legs[BACK_RIGHT], BACK_RIGHT_FEMUR);
+    leg_set_tibia(legs[BACK_RIGHT], BACK_RIGHT_TIBIA);
+    if (leg_add_servo(legs[BACK_RIGHT], SHOULDER, BACK_RIGHT_SHOULDER_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[BACK_RIGHT], FEMUR, BACK_RIGHT_FEMUR_PIN))
+        goto ABORT;
+    if (leg_add_servo(legs[BACK_RIGHT], TIBIA, BACK_RIGHT_TIBIA_PIN))
+        goto ABORT;
+    leg_set_servo_range(legs[BACK_RIGHT], SHOULDER,
+                        BACK_RIGHT_MIN_SHOULDER_POSITION,
+                        BACK_RIGHT_MAX_SHOULDER_POSITION);
+    leg_set_servo_range(legs[BACK_RIGHT], FEMUR,
+                        BACK_RIGHT_MIN_FEMUR_POSITION,
+                        BACK_RIGHT_MAX_FEMUR_POSITION);
+    leg_set_servo_range(legs[BACK_RIGHT], TIBIA,
+                        BACK_RIGHT_MIN_TIBIA_POSITION,
+                        BACK_RIGHT_MAX_TIBIA_POSITION);
+    leg_set_servo_zero_position(legs[BACK_RIGHT], SHOULDER,
+                        BACK_RIGHT_SHOULDER_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[BACK_RIGHT], FEMUR,
+                        BACK_RIGHT_FEMUR_ZERO_POSITION);
+    leg_set_servo_zero_position(legs[BACK_RIGHT], TIBIA,
+                        BACK_RIGHT_TIBIA_ZERO_POSITION);
+
+    return 0;
+
+ABORT:
+    leg_destroy(legs[FRONT_LEFT]);
+    leg_destroy(legs[FRONT_RIGHT]);
+    leg_destroy(legs[BACK_LEFT]);
+    leg_destroy(legs[BACK_RIGHT]);
+    return 1;
+
 }

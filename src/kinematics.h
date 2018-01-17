@@ -5,6 +5,6 @@
 
 #include "leg.h"
 
-int solve_kinematics_geometric(Leg *leg);
+int kinematics_geometric(Leg *leg);
 
 #endif

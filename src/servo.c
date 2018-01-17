@@ -148,18 +148,14 @@ void servo_print_details(Servo *servo) {
             "Pin: %d\n"
             "Range: %d - %d\n"
             "Desired Position: %d\n"
-            "Current Position: %d\n"
             "Desired Angle: %.2f\n"
-            "Current Angle: %.2f\n"
             "\n------------------------------",
             servo->label,
             servo->pin,
             servo->min_position,
             servo->max_position,
             servo->des_position,
-            servo->cur_position,
-            servo->des_angle,
-            servo->cur_angle);
+            servo->des_angle);
     log_info(buf);
 }
 

@@ -15,6 +15,7 @@ typedef struct serv_args_t {
 }serv_args_t;
 
 
+int create_server_thread(const char *address, short port, Command **cmd);
 void *server_thread(void *args);
 
 #endif

@@ -10,10 +10,8 @@
 typedef struct Servo {
     const char *label;
     uint8_t pin;
-    float cur_angle;
     float des_angle;
     uint16_t des_position;
-    uint16_t cur_position;
     uint16_t zero_position;
     uint16_t min_position;
     uint16_t max_position;

@@ -28,6 +28,41 @@ static int read_n_bytes(int fd, int len, void *buf) {
 
 
 
+int create_server_thread(const char *address, short port, Command **cmd) {
+    struct serv_args_t *serv_a;
+    int str_len;
+    pthread_t tid;
+
+    if ((serv_a = malloc(sizeof(serv_args_t))) == NULL) {
+        log_error("Failed to malloc server args");
+        return -1;
+    }
+    str_len = strlen(address) + 1;
+    if ((serv_a->address = malloc(sizeof(str_len))) == NULL) {
+        log_error("Failed to malloc address");
+        goto FAIL;
+    }
+    serv_a->port = port;
+    serv_a->cmd = cmd;
+    strncpy(serv_a->address, address, str_len);
+
+    if (pthread_create(&tid, NULL, server_thread, serv_a)) {
+        log_error("Failed to create server thread");
+        goto FAIL;
+    }
+
+    if (pthread_detach(tid)) {
+        log_error("Failed to detach server thread");
+        goto FAIL;
+    }
+    return 0;
+
+FAIL:
+    free(serv_a->address);
+    free(serv_a);
+    return -1;
+}
+
 
 
 void *server_thread(void *args) {
@@ -66,6 +101,7 @@ void *server_thread(void *args) {
         log_fatal("Thread - failed to accept");
         return NULL;
     }
+
     while (read(conn_fd, &len, sizeof(int32_t))) {
         len = ntohl(len);
         if (len >= 1024) {
@@ -86,7 +122,3 @@ void *server_thread(void *args) {
     close(conn_fd);
     return NULL;
 }
-
-
-
-
