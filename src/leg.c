@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <math.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_blas.h>
@@ -229,6 +232,27 @@ void leg_set_servo_zero_position(Leg *leg, int servo, uint16_t pos) {
 
 
 /*
+ * Function: leg_set_servo_inverted
+ * ================================
+ * Input:
+ *  leg - pointer to leg structure
+ *  servo - servo to update
+ *  invert - value of inversion. (1 => standard, -1 => inverted)
+ * Return: N/A
+ *
+ * This function sets the inversion for a servo. A servo is defined to be
+ * inverted if when doing a positive rotation, you need to subtract positions.
+ * In other words, the positive kinematic solution is in a counter-clockwise
+ * motion. Set the invert to -1 for inverted servos
+ */
+void leg_set_servo_inverted(Leg *leg, int servo, uint8_t invert) {
+    if (leg->servos[servo] != NULL) {
+        servo_set_inverted(leg->servos[servo], invert);
+    }
+}
+
+
+/*
  * Function: leg_set_servo_angle
  * =============================
  * Input:
@@ -354,6 +378,57 @@ int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z) {
 }
 
 
+int8_t leg_get_servo_pin(Leg *leg, int servo) {
+    if (leg->servos[servo] != NULL) {
+        return servo_get_pin(leg->servos[servo]);
+    }
+    return -1;
+}
+
+
+int16_t leg_get_servo_position(Leg *leg, int servo) {
+    if (leg->servos[servo] != NULL) {
+        return servo_get_position(leg->servos[servo]);
+    }
+    return -1;
+}
+
+
+
+
+/*
+ * Function: leg_generate_cmd
+ * ==========================
+ * Input:
+ *  legs - pointer to array of leg pointers to generate command
+ *  buf - buffer to load command. Has a limit of 1024
+ * Return: status of success
+ *
+ * This function loads the buffer with a command string to send to the SSC-32
+ */
+int leg_generate_cmd(Leg **legs, char *buf) {
+    // for each leg, go through each servo and convert the angle to a position
+    // then generate the command string
+    int offset = 0;
+    int i;
+    memset(buf, 0, CMD_SIZE);
+
+    for (i = 0; i < NUM_LEGS; i++) {
+        offset += snprintf(buf + offset, CMD_SIZE - offset, "#%d P%d ",
+                            leg_get_servo_pin(legs[i], SHOULDER),
+                            leg_get_servo_position(legs[i], SHOULDER));
+        offset += snprintf(buf + offset, CMD_SIZE - offset, "#%d P%d ",
+                            leg_get_servo_pin(legs[i], FEMUR),
+                            leg_get_servo_position(legs[i], FEMUR));
+        offset += snprintf(buf + offset, CMD_SIZE - offset, "#%d P%d ",
+                            leg_get_servo_pin(legs[i], TIBIA),
+                            leg_get_servo_position(legs[i], TIBIA));
+    }
+    offset += snprintf(buf + offset, CMD_SIZE- offset, "T%d", LEG_SPEED_MS);
+    return offset;
+}
+
+
 
 /*
  * Function: leg_init
@@ -405,6 +480,12 @@ int leg_init(Leg **legs) {
                         FRONT_LEFT_FEMUR_ZERO_POSITION);
     leg_set_servo_zero_position(legs[FRONT_LEFT], TIBIA,
                         FRONT_LEFT_TIBIA_ZERO_POSITION);
+    leg_set_servo_inverted(legs[FRONT_LEFT], SHOULDER,
+                        FRONT_LEFT_SHOULDER_INVERTED);
+    leg_set_servo_inverted(legs[FRONT_LEFT], FEMUR,
+                        FRONT_LEFT_FEMUR_INVERTED);
+    leg_set_servo_inverted(legs[FRONT_LEFT], TIBIA,
+                        FRONT_LEFT_TIBIA_INVERTED);
 
 
     leg_set_rotation(legs[FRONT_RIGHT], FRONT_RIGHT_ROTATION);
@@ -434,6 +515,12 @@ int leg_init(Leg **legs) {
                         FRONT_RIGHT_FEMUR_ZERO_POSITION);
     leg_set_servo_zero_position(legs[FRONT_RIGHT], TIBIA,
                         FRONT_RIGHT_TIBIA_ZERO_POSITION);
+    leg_set_servo_inverted(legs[FRONT_RIGHT], SHOULDER,
+                        FRONT_RIGHT_SHOULDER_INVERTED);
+    leg_set_servo_inverted(legs[FRONT_RIGHT], FEMUR,
+                        FRONT_RIGHT_FEMUR_INVERTED);
+    leg_set_servo_inverted(legs[FRONT_RIGHT], TIBIA,
+                        FRONT_RIGHT_TIBIA_INVERTED);
 
 
 
@@ -464,6 +551,12 @@ int leg_init(Leg **legs) {
                         BACK_LEFT_FEMUR_ZERO_POSITION);
     leg_set_servo_zero_position(legs[BACK_LEFT], TIBIA,
                         BACK_LEFT_TIBIA_ZERO_POSITION);
+    leg_set_servo_inverted(legs[BACK_LEFT], SHOULDER,
+                        BACK_LEFT_SHOULDER_INVERTED);
+    leg_set_servo_inverted(legs[BACK_LEFT], FEMUR,
+                        BACK_LEFT_FEMUR_INVERTED);
+    leg_set_servo_inverted(legs[BACK_LEFT], TIBIA,
+                        BACK_LEFT_TIBIA_INVERTED);
 
 
     leg_set_rotation(legs[BACK_RIGHT], BACK_RIGHT_ROTATION);
@@ -493,6 +586,12 @@ int leg_init(Leg **legs) {
                         BACK_RIGHT_FEMUR_ZERO_POSITION);
     leg_set_servo_zero_position(legs[BACK_RIGHT], TIBIA,
                         BACK_RIGHT_TIBIA_ZERO_POSITION);
+    leg_set_servo_inverted(legs[BACK_RIGHT], SHOULDER,
+                        BACK_RIGHT_SHOULDER_INVERTED);
+    leg_set_servo_inverted(legs[BACK_RIGHT], FEMUR,
+                        BACK_RIGHT_FEMUR_INVERTED);
+    leg_set_servo_inverted(legs[BACK_RIGHT], TIBIA,
+                        BACK_RIGHT_TIBIA_INVERTED);
 
     return 0;
 

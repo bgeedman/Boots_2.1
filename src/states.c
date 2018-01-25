@@ -11,6 +11,7 @@
 #include "server.h"
 #include "updater.h"
 #include "states.h"
+#include "sequences.h"
 #include "commands.pb-c.h"
 
 
@@ -46,12 +47,13 @@ int setup_state(state_args *arg) {
     }
 
     log_info("Setting up timer callback...");
-    if (create_timer_callback(0.5, arg->legs)) {
+    //if (create_timer_callback(0.5, arg->legs)) {
+    if (create_timer_callback(1.0, arg->legs)) {
         log_fatal("Failed to create timer callback");
         return END;
     }
 
-    log_debug("Set sequence to UNKNOWN_TO_PARK");
+    set_sequence(seq_unknown_to_park);
     return PARK;
 }
 
@@ -72,7 +74,7 @@ int park_state(state_args *arg) {
     log_info("Current State: %d", command);
     switch (command) {
         case COMMAND__TYPE__STAND:
-            log_debug("Set sequence PARK_TO_STAND");
+            set_sequence(seq_park_to_stand);
             return STAND;
         case COMMAND__TYPE__STOP:
             return PARK;

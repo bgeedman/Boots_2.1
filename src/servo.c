@@ -105,10 +105,46 @@ void servo_set_desired_position(Servo *servo, uint16_t pos) {
  * set_desired_position_function.
  */
 void servo_set_desired_angle(Servo *servo, float angle) {
-    // Check the position is not out of range
     servo->des_angle = angle;
+
+    int position;
+    log_debug("zero_position: %d", servo->zero_position);
+    log_debug("inverted: %d", servo->inverted);
+    log_debug("angle: %f", angle);
+    log_debug("ticks: %d", SERVO_TICKS_PER_DEGREE);
+    position = servo->zero_position +
+                (servo->inverted * angle * SERVO_TICKS_PER_DEGREE);
+    servo_set_desired_position(servo, position);
 }
 
+
+
+/*
+ * Function: servo_set_inverted
+ * ============================
+ * Input:
+ *  servo - pointer to servo struct
+ *  invert - flag to invert servo. (1 => standard, -1 => inverted)
+ * Return: N/A
+ *
+ * This function sets the servo to be inverted or standard. An inverted servo
+ * is defined if the positive rotation for the kinematics is in a counter-
+ * clockwise direction.
+ */
+void servo_set_inverted(Servo *servo, uint8_t invert) {
+    servo->inverted = invert;
+}
+
+
+
+uint8_t servo_get_pin(Servo *servo) {
+    return servo->pin;
+}
+
+
+uint16_t servo_get_position(Servo *servo) {
+    return servo->des_position;
+}
 
 
 /*

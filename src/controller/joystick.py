@@ -97,7 +97,7 @@ def run_joystick(server, name):
         return
     done = False
 
-    pygame.time.set_timer(USEREVENT + 1, 1000)
+    pygame.time.set_timer(USEREVENT + 1, 100)
 
     if (server != None):
         logging.info("Connecting to server {}".format(server))

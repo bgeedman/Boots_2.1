@@ -1,4 +1,4 @@
-OBJS = commands.pb-c.o kinematics.o leg.o logger.o servo.o tools.o server.o states.o updater.o
+OBJS = commands.pb-c.o kinematics.o leg.o logger.o servo.o tools.o server.o states.o updater.o sequences.o
 TARGET = testing
 CC = gcc
 DEBUG = -g
@@ -52,9 +52,11 @@ server.o: server.c server.h commands.pb-c.h logger.h
 states.o: states.c states.h leg.h logger.h server.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ states.c $(LIBS)
 
-updater.o: updater.c updater.h logger.h
+updater.o: updater.c updater.h logger.h sequences.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ updater.c $(LIBS)
 
+sequences.o: sequences.c sequences.h leg.h logger.h
+	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ sequences.c $(LIBS)
 
 .PHONY: clean
 
