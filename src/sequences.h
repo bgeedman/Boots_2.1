@@ -5,26 +5,20 @@
 
 
 typedef struct {
-    int frame;
-    // array of points?
-} sequence;
-
-/*
- * static uint32_t seq[][3] = {
- *  {1,2,3}, {1,2,3}, {1,2,3}, {1,2,3},
- * }
- *
- */
+    int x;
+    int y;
+    int z;
+} point_t;
 
 
-void seq_unknown_to_park(void);
-void seq_park_to_stand(void);
-void seq_stand_to_park(void);
-void seq_stand_to_stretch(void);
-void seq_stand_to_turn_left(void);
-void seq_stand_to_turn_right(void);
-void seq_stand_to_walk(void);
+point_t seq_unknown_to_park(int, int);
+point_t seq_park_to_stand(int, int);
+point_t seq_stand_to_park(int, int);
+point_t seq_stand_to_stretch(int, int);
+point_t seq_stand_to_turn_left(int, int);
+point_t seq_stand_to_turn_right(int, int);
+point_t seq_stand_to_walk(int, int);
 
-void seq_stop_and_center(void);
+point_t seq_stop_and_center(int, int);
 
 #endif
