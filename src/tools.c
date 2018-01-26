@@ -1,8 +1,10 @@
 #include <gsl/gsl_matrix.h>
+#include <pthread.h>
 #include "tools.h"
 #include "logger.h"
 
 
+pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void tools_matrix_print(char *label, gsl_matrix *matrix) {
     if (matrix == NULL) {
@@ -21,4 +23,14 @@ void tools_matrix_print(char *label, gsl_matrix *matrix) {
         offset += snprintf(buf+offset, sizeof(buf) - offset, "\n");
     }
     log_info("%s", buf);
+}
+
+
+
+void lock_logger(void *udata, int lock) {
+    if (lock) {
+        pthread_mutex_lock(&log_mutex);
+    } else {
+        pthread_mutex_unlock(&log_mutex);
+    }
 }

@@ -1,5 +1,5 @@
 OBJS = commands.pb-c.o kinematics.o leg.o logger.o servo.o tools.o server.o states.o updater.o sequences.o
-TARGET = testing
+TARGET = robot
 CC = gcc
 DEBUG = -g
 CFLAGS = $(DEBUG) -c -Wall
@@ -18,6 +18,9 @@ all:
 
 default: all
 
+testing: $(OBJS)
+	$(CC) $(LFLAGS) $(IDIR) $(LDIR) $(OBJS) testing.c -o testing $(LIBS)
+
 protobuf: commands.proto
 	@echo "======================================"
 	@echo "Compiling new protobuf files..."
@@ -25,7 +28,7 @@ protobuf: commands.proto
 	$(PROTO_C) --c_out=./ $^
 	@echo "======================================"
 
-tester: $(OBJS)
+robot: $(OBJS)
 	$(CC) $(LFLAGS) $(IDIR) $(LDIR) $(OBJS) main.c -o $(TARGET) $(LIBS)
 
 commands.pb-c.o: protobuf commands.pb-c.c commands.pb-c.h
@@ -34,7 +37,7 @@ commands.pb-c.o: protobuf commands.pb-c.c commands.pb-c.h
 kinematics.o: kinematics.c kinematics.h logger.h tools.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ kinematics.c $(LIBS)
 
-leg.o: leg.c leg.h servo.h tools.h logger.h
+leg.o: leg.c leg.h leg_constants.h servo.h tools.h logger.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ leg.c $(LIBS)
 
 logger.o: logger.c logger.h
@@ -49,13 +52,13 @@ tools.o: tools.c tools.h logger.h
 server.o: server.c server.h commands.pb-c.h logger.h
 	$(CC) $(CFLAGS) -o $@ server.c $(LIBS)
 
-states.o: states.c states.h leg.h logger.h server.h
+states.o: states.c states.h leg.h logger.h server.h updater.h sequences.h commands.pb-c.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ states.c $(LIBS)
 
-updater.o: updater.c updater.h logger.h sequences.h
+updater.o: updater.c updater.h logger.h sequences.h leg.h kinematics.h commands.pb-c.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ updater.c $(LIBS)
 
-sequences.o: sequences.c sequences.h leg.h logger.h
+sequences.o: sequences.c sequences.h leg.h logger.h commands.pb-c.h server.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ sequences.c $(LIBS)
 
 .PHONY: clean

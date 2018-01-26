@@ -9,6 +9,7 @@
 #include "logger.h"
 #include "kinematics.h"
 #include "states.h"
+#include "tools.h"
 
 
 
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]) {
     sa.port = 15000;
     sa.cmd = NULL;
 
+    log_set_lock(lock_logger);
 
 
     current_state = state_table[ENTRY_STATE];

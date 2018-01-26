@@ -108,10 +108,6 @@ void servo_set_desired_angle(Servo *servo, float angle) {
     servo->des_angle = angle;
 
     int position;
-    log_debug("zero_position: %d", servo->zero_position);
-    log_debug("inverted: %d", servo->inverted);
-    log_debug("angle: %f", angle);
-    log_debug("ticks: %d", SERVO_TICKS_PER_DEGREE);
     position = servo->zero_position +
                 (servo->inverted * angle * SERVO_TICKS_PER_DEGREE);
     servo_set_desired_position(servo, position);

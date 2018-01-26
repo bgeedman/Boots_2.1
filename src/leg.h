@@ -57,7 +57,7 @@ int16_t leg_get_servo_position(Leg *leg, int servo);
 
 
 int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z);
-int leg_generate_cmd(Leg **legs, char *buf);
+int leg_generate_cmd(Leg **legs, char *buf, int num_legs);
 int leg_init(Leg **legs);
 
 #endif

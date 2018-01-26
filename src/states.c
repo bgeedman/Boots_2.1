@@ -15,6 +15,16 @@
 #include "commands.pb-c.h"
 
 
+static const char *commands[] = {
+    "STOP",
+    "STAND",
+    "WALK",
+    "TURN",
+    "STRETCH",
+    "PARK",
+    "QUIT"
+};
+
 int (*state_table[])(state_args *) = {
     setup_state,
     park_state,
@@ -47,12 +57,13 @@ int setup_state(state_args *arg) {
     }
 
     log_info("Setting up timer callback...");
-    //if (create_timer_callback(0.5, arg->legs)) {
-    if (create_timer_callback(1.0, arg->legs)) {
+    // pass the cmd pointer to the updater thread. That way the sequence
+    // function can use the command. I will need to also put a lock on it
+    if (create_timer_callback(1.0, arg->legs, arg->cmd)) {
         log_fatal("Failed to create timer callback");
         return END;
     }
-
+    log_info("Setting sequence to unknown_to_park");
     set_sequence(seq_unknown_to_park);
     return PARK;
 }
@@ -62,7 +73,6 @@ int setup_state(state_args *arg) {
 
 int park_state(state_args *arg) {
     log_trace("Entering park state");
-
     int command;
     if (arg->cmd == NULL) {
         return PARK;
@@ -71,9 +81,10 @@ int park_state(state_args *arg) {
     command = arg->cmd->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
-    log_info("Current State: %d", command);
+    log_info("Current command: %s", commands[command]);
     switch (command) {
         case COMMAND__TYPE__STAND:
+            log_info("Setting sequence park_to_stand");
             set_sequence(seq_park_to_stand);
             return STAND;
         case COMMAND__TYPE__STOP:
@@ -99,12 +110,16 @@ int stand_state(state_args *arg) {
     command = arg->cmd->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
+    log_info("Current command: %s", commands[command]);
+
     switch (command) {
         case COMMAND__TYPE__PARK:
-            log_debug("Set sequence STAND_TO_PARK");
+            log_info("Setting sequence stand_to_park");
+            set_sequence(seq_stand_to_park);
             return PARK;
         case COMMAND__TYPE__STRETCH:
             log_debug("Set sequence STAND_TO_STRETCH");
+            set_sequence(seq_stand_to_stretch);
             return STRETCH;
         case COMMAND__TYPE__TURN:
             log_debug("Set sequence STAND_TO_TURN");
@@ -136,6 +151,7 @@ int stretch_state(state_args *arg) {
     command = arg->cmd->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
+    log_info("Current command: %s", commands[command]);
     switch (command){
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
@@ -162,6 +178,7 @@ int walk_state(state_args *arg) {
     command = arg->cmd->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
+    log_info("Current command: %s", commands[command]);
     switch (command) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
@@ -188,6 +205,7 @@ int turn_state(state_args *arg) {
     command = arg->cmd->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
+    log_info("Current command: %s", commands[command]);
     switch (command) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");

@@ -9,8 +9,11 @@
 
 #include <math.h>
 #include <gsl/gsl_matrix.h>
+#include <pthread.h>
 
 #include "leg.h"
+
+extern pthread_mutex_t log_mutex;
 
 // Converts degrees to radians.
 #define degreesToRadians(angleDegrees) (angleDegrees * M_PI / 180.0)
@@ -20,7 +23,5 @@
 
 void tools_matrix_print(char *label, gsl_matrix *matrix);
 
-
-void generate_command_string(Leg **legs);
-
+void lock_logger(void *, int);
 #endif

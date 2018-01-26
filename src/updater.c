@@ -9,17 +9,16 @@
 #include "updater.h"
 #include "leg.h"
 #include "kinematics.h"
-
 #include "sequences.h"
-
 #include "logger.h"
+#include "commands.pb-c.h"
 
 
 
 
 #define BILLION 1000000000L
 
-static point_t (*sequence_function)(int, int);
+static point_t (*sequence_function)(int, int, Command *);
 static int frame = 0;
 static sem_t updatesem;
 static timer_t timerid;
@@ -60,7 +59,10 @@ void callback(int signo, siginfo_t *info, void *context) {
 
 
 void *updater_thread(void *data) {
-    Leg **legs = (Leg **)data;
+    struct update_thread_args *args = (struct update_thread_args *)data;
+    Leg **legs = args->legs;
+    Command *cmd = args->cmd;
+
     log_trace("Update thread");
     char buf[1024];
 
@@ -68,48 +70,59 @@ void *updater_thread(void *data) {
         log_debug("get next leg postiion");
         // call sequence function with the frame number
 
-        log_debug("updating leg positions");
-        point_t epoint = sequence_function(frame, FRONT_LEFT);
+        log_debug("updating leg positions for frame: %d", frame);
+        point_t epoint = sequence_function(frame, FRONT_LEFT, cmd);
 
-        log_debug("FRONT_LEFT: (%d, %d, %d)\n", epoint.x, epoint.y, epoint.z);
+        log_debug("FRONT_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[FRONT_LEFT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, FRONT_RIGHT);
-        log_debug("FRONT_RIGHT: (%d, %d, %d)\n", epoint.x, epoint.y, epoint.z);
+        epoint = sequence_function(frame, FRONT_RIGHT, cmd);
+        log_debug("FRONT_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[FRONT_RIGHT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, BACK_LEFT);
-        log_debug("BACK_LEFT: (%d, %d, %d)\n", epoint.x, epoint.y, epoint.z);
+        epoint = sequence_function(frame, BACK_LEFT, cmd);
+        log_debug("BACK_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[BACK_LEFT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, BACK_RIGHT);
-        log_debug("BACK_RIGHT: (%d, %d, %d)\n", epoint.x, epoint.y, epoint.z);
+        epoint = sequence_function(frame, BACK_RIGHT, cmd);
+        log_debug("BACK_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[BACK_RIGHT], epoint.x, epoint.y, epoint.z);
 
         log_debug("solve kinematics");
-        kinematics_geometric(legs[FRONT_LEFT]);
-        kinematics_geometric(legs[FRONT_RIGHT]);
-        kinematics_geometric(legs[BACK_LEFT]);
-        kinematics_geometric(legs[BACK_RIGHT]);
-
-        log_debug("write command to SSC-32");
-        leg_generate_cmd(legs, buf);
-        printf("cmd: %s\n", buf);
-
+        if ((kinematics_geometric(legs[FRONT_LEFT])) ||
+            (kinematics_geometric(legs[FRONT_RIGHT])) ||
+            (kinematics_geometric(legs[BACK_LEFT])) ||
+            (kinematics_geometric(legs[BACK_RIGHT]))) {
+            log_fatal("Failed to solve one of the kinematics");
+            log_fatal("Frame: %d", frame);
+        } else {
+            log_debug("write command to SSC-32");
+            leg_generate_cmd(legs, buf, NUM_LEGS);
+            printf("cmd: %s\n", buf);
+        }
+        frame++;
     }
     return NULL;
 }
 
 
-int create_timer_callback(double sec, Leg **legs) {
+int create_timer_callback(double sec, Leg **legs, Command *cmd) {
     pthread_t tid;
+    struct update_thread_args *targs;
+    if ((targs = malloc(sizeof(struct update_thread_args))) == NULL) {
+        log_error("Failed to malloc space for thread args");
+        return -1;
+    }
+    targs->legs = legs;
+    targs->cmd = cmd;
+
 
     if (sem_init(&updatesem, 0, 0)) {
         log_error("Failed to init semaphore");
         return -1;
     }
 
-    if (pthread_create(&tid, NULL, updater_thread, legs)) {
+    if (pthread_create(&tid, NULL, updater_thread, targs)) {
         log_error("Failed to create updater thread");
         return -1;
     }
@@ -135,7 +148,7 @@ int create_timer_callback(double sec, Leg **legs) {
 }
 
 
-void set_sequence(point_t (*foo)(int, int)) {
-    sequence_function = foo;
+void set_sequence(point_t (*func)(int, int, Command *)) {
+    sequence_function = func;
     frame = 0;
 }

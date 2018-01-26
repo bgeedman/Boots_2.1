@@ -104,9 +104,9 @@ static float law_of_cosines(float a, float b, float c) {
     a2 = powf(a, 2);
     b2 = powf(b, 2);
     c2 = powf(c, 2);
-    log_debug("law of cosines -- a: %.2f, a2: %.2f", a, a2);
-    log_debug("law of cosines -- b: %.2f, b2: %.2f", b, b2);
-    log_debug("law of cosines -- c: %.2f, c2: %.2f", c, c2);
+    /* log_debug("law of cosines -- a: %.2f, a2: %.2f", a, a2); */
+    /* log_debug("law of cosines -- b: %.2f, b2: %.2f", b, b2); */
+    /* log_debug("law of cosines -- c: %.2f, c2: %.2f", c, c2); */
     gamma = acosf((a2 + b2 - c2) / (2 * a * b));
     return gamma;
 }
