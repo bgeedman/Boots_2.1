@@ -16,6 +16,7 @@ class Buttons(IntEnum):
     TRIGGER = 0
     THUMB = 1
     AUX06 = 6
+    AUX07 = 7
     AUX11 = 11
 
 
@@ -128,6 +129,8 @@ def run_joystick(server, name):
                     done = True
                 elif (event.button == Buttons.AUX06):
                     command.cmd = Cmds.STAND
+                elif (event.button == Buttons.AUX07):
+                    command.cmd = Cmds.PARK
                 else:
                     logging.warning("Unhandled button down event")
 
@@ -139,7 +142,8 @@ def run_joystick(server, name):
             '''
             if (event.type == pygame.JOYBUTTONUP):
                 if (event.button == Buttons.TRIGGER or
-                    event.button == Buttons.AUX06):
+                    event.button == Buttons.AUX06 or
+                    event.button == Buttons.AUX07):
                     stretch_mode = False
                     command.cmd = Cmds.STOP
                     command.roll = 0.0
@@ -233,7 +237,7 @@ def send_command(sock, command):
         logging.debug("Sending cmd: {}".format(command))
         sock.send(cmd_data)
     else:
-        logging.debug("Command:\n{}".format(command))
+        logging.debug("Command:{}".format(command))
 
 
 def main():
