@@ -25,6 +25,8 @@ static const char *commands[] = {
     "QUIT"
 };
 
+Command *command;
+
 int (*state_table[])(state_args *) = {
     setup_state,
     park_state,
@@ -51,15 +53,13 @@ int setup_state(state_args *arg) {
     }
 
     log_info("Setting up the server thread...");
-    if (create_server_thread(arg->address, arg->port, &(arg->cmd))) {
+    if (create_server_thread(arg->address, arg->port)) {
         log_fatal("Failed to setup server thread");
         return END;
     }
 
     log_info("Setting up timer callback...");
-    // pass the cmd pointer to the updater thread. That way the sequence
-    // function can use the command. I will need to also put a lock on it
-    if (create_timer_callback(1.0, arg->legs, arg->cmd)) {
+    if (create_timer_callback(0.1, arg->legs)) {
         log_fatal("Failed to create timer callback");
         return END;
     }
@@ -73,16 +73,16 @@ int setup_state(state_args *arg) {
 
 int park_state(state_args *arg) {
     log_trace("Entering park state");
-    int command;
-    if (arg->cmd == NULL) {
+    int cmd;
+    if (command == NULL) {
         return PARK;
     }
     pthread_mutex_lock(&cmd_mutex);
-    command = arg->cmd->cmd;
+    cmd = command->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
-    log_info("Current command: %s", commands[command]);
-    switch (command) {
+    log_info("Current cmd: %s", commands[cmd]);
+    switch (cmd) {
         case COMMAND__TYPE__STAND:
             log_info("Setting sequence park_to_stand");
             set_sequence(seq_park_to_stand);
@@ -101,18 +101,18 @@ int park_state(state_args *arg) {
 
 int stand_state(state_args *arg) {
     log_trace("Entering stand state");
-    int command;
-    if (arg->cmd == NULL) {
-        log_warn("Something strange has happened....cmd is null");
+    int cmd;
+    if (command == NULL) {
+        log_warn("Something strange has happened");
         return STAND;
     }
     pthread_mutex_lock(&cmd_mutex);
-    command = arg->cmd->cmd;
+    cmd = command->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
-    log_info("Current command: %s", commands[command]);
+    log_info("Current cmd: %s", commands[cmd]);
 
-    switch (command) {
+    switch (cmd) {
         case COMMAND__TYPE__PARK:
             log_info("Setting sequence stand_to_park");
             set_sequence(seq_stand_to_park);
@@ -123,6 +123,7 @@ int stand_state(state_args *arg) {
             return STRETCH;
         case COMMAND__TYPE__TURN:
             log_debug("Set sequence STAND_TO_TURN");
+            // check the direction and set the correct turn sequence
             return TURN;
         case COMMAND__TYPE__WALK:
             log_debug("Set sequence STAND_TO_WALK");
@@ -142,17 +143,17 @@ int stand_state(state_args *arg) {
 
 int stretch_state(state_args *arg) {
     log_trace("Entering stretch state");
-    int command;
-    if (arg->cmd == NULL) {
-        log_warn("Something strange has happened....cmd is null");
+    int cmd;
+    if (command == NULL) {
+        log_warn("Something strange has happened");
         return STAND;
     }
     pthread_mutex_lock(&cmd_mutex);
-    command = arg->cmd->cmd;
+    cmd = command->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
-    log_info("Current command: %s", commands[command]);
-    switch (command){
+    log_info("Current cmd; %s", commands[cmd]);
+    switch (cmd) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
             return STAND;
@@ -167,19 +168,23 @@ int stretch_state(state_args *arg) {
 
 
 
+/*
+ * Might add in different gates.  Likely start with creep gait (my favorit)
+ * but could add in trot and crawl
+ */
 int walk_state(state_args *arg) {
     log_trace("Entering walk state");
-    int command;
-    if (arg->cmd == NULL) {
-        log_warn("Something strange has happened....cmd is null");
+    int cmd;
+    if (command == NULL) {
+        log_warn("Something strange has happened");
         return STAND;
     }
     pthread_mutex_lock(&cmd_mutex);
-    command = arg->cmd->cmd;
+    cmd = command->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
-    log_info("Current command: %s", commands[command]);
-    switch (command) {
+    log_info("Current cmd: %s", commands[cmd]);
+    switch (cmd) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
             return STAND;
@@ -193,20 +198,23 @@ int walk_state(state_args *arg) {
 }
 
 
-
+/*
+ * TODO: Add in different turn gates.  Trot would be the fastest, but could
+ * have the more stable crawl
+ */
 int turn_state(state_args *arg) {
     log_trace("Entering turn state");
-    int command;
-    if (arg->cmd == NULL) {
-        log_warn("Something strange has happened....cmd is null");
+    int cmd;
+    if (command == NULL) {
+        log_warn("Something strange has happened");
         return STAND;
     }
     pthread_mutex_lock(&cmd_mutex);
-    command = arg->cmd->cmd;
+    cmd = command->cmd;
     pthread_mutex_unlock(&cmd_mutex);
 
-    log_info("Current command: %s", commands[command]);
-    switch (command) {
+    log_info("Current cmd: %s", commands[cmd]);
+    switch (cmd) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
             return STAND;

@@ -400,7 +400,7 @@ int16_t leg_get_servo_position(Leg *leg, int servo) {
  * Function: leg_generate_cmd
  * ==========================
  * Input:
- *  legs - pointer to array of leg pointers to generate command
+ *  legs - pointer to array of leg pointers to generate cmd
  *  buf - buffer to load command. Has a limit of 1024
  *  num_legs - number of legs to iterate over
  * Return: status of success
@@ -423,7 +423,8 @@ int leg_generate_cmd(Leg **legs, char *buf, int num_legs) {
                             leg_get_servo_pin(legs[i], TIBIA),
                             leg_get_servo_position(legs[i], TIBIA));
     }
-    offset += snprintf(buf + offset, CMD_SIZE- offset, "T%d", LEG_SPEED_MS);
+    offset += snprintf(buf + offset, CMD_SIZE - offset, "T%d", LEG_SPEED_MS);
+    offset += snprintf(buf + offset, CMD_SIZE - offset, "\r\n");
     return offset;
 }
 

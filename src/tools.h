@@ -24,4 +24,9 @@ extern pthread_mutex_t log_mutex;
 void tools_matrix_print(char *label, gsl_matrix *matrix);
 
 void lock_logger(void *, int);
+
+int open_serial_port(char *tty);
+
+int write_command(char *buf);
+
 #endif

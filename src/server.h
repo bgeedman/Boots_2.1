@@ -7,15 +7,16 @@
 #include "commands.pb-c.h"
 
 extern pthread_mutex_t cmd_mutex;
+extern Command *command;
 
 typedef struct serv_args_t {
     char *address;
     short port;
-    Command **cmd;
+//    Command **cmd;
 }serv_args_t;
 
 
-int create_server_thread(const char *address, short port, Command **cmd);
+int create_server_thread(const char *address, short port);//, Command **cmd);
 void *server_thread(void *args);
 
 #endif

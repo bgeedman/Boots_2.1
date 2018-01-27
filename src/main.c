@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
 
     sa.address = "127.0.0.1";
     sa.port = 15000;
-    sa.cmd = NULL;
+//    sa.cmd = NULL;
 
     log_set_lock(lock_logger);
 

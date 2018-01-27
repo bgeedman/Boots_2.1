@@ -12,13 +12,14 @@
 #include "sequences.h"
 #include "logger.h"
 #include "commands.pb-c.h"
+#include "tools.h"
 
-
+Command *command;
 
 
 #define BILLION 1000000000L
 
-static point_t (*sequence_function)(int, int, Command *);
+static point_t (*sequence_function)(int, int);
 static int frame = 0;
 static sem_t updatesem;
 static timer_t timerid;
@@ -61,30 +62,28 @@ void callback(int signo, siginfo_t *info, void *context) {
 void *updater_thread(void *data) {
     struct update_thread_args *args = (struct update_thread_args *)data;
     Leg **legs = args->legs;
-    Command *cmd = args->cmd;
 
     log_trace("Update thread");
     char buf[1024];
 
     while (sem_wait(&updatesem) == 0) {
         log_debug("get next leg postiion");
-        // call sequence function with the frame number
 
         log_debug("updating leg positions for frame: %d", frame);
-        point_t epoint = sequence_function(frame, FRONT_LEFT, cmd);
+        point_t epoint = sequence_function(frame, FRONT_LEFT);
 
         log_debug("FRONT_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[FRONT_LEFT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, FRONT_RIGHT, cmd);
+        epoint = sequence_function(frame, FRONT_RIGHT);
         log_debug("FRONT_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[FRONT_RIGHT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, BACK_LEFT, cmd);
+        epoint = sequence_function(frame, BACK_LEFT);
         log_debug("BACK_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[BACK_LEFT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, BACK_RIGHT, cmd);
+        epoint = sequence_function(frame, BACK_RIGHT);
         log_debug("BACK_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[BACK_RIGHT], epoint.x, epoint.y, epoint.z);
 
@@ -98,7 +97,8 @@ void *updater_thread(void *data) {
         } else {
             log_debug("write command to SSC-32");
             leg_generate_cmd(legs, buf, NUM_LEGS);
-            printf("cmd: %s\n", buf);
+            log_info("Sending command: %s", buf);
+            write_command(buf);
         }
         frame++;
     }
@@ -106,22 +106,25 @@ void *updater_thread(void *data) {
 }
 
 
-int create_timer_callback(double sec, Leg **legs, Command *cmd) {
+int create_timer_callback(double sec, Leg **legs) {
     pthread_t tid;
     struct update_thread_args *targs;
+
     if ((targs = malloc(sizeof(struct update_thread_args))) == NULL) {
         log_error("Failed to malloc space for thread args");
         return -1;
     }
     targs->legs = legs;
-    targs->cmd = cmd;
 
 
     if (sem_init(&updatesem, 0, 0)) {
         log_error("Failed to init semaphore");
         return -1;
     }
-
+    if (open_serial_port("/dev/ttyUSB0")) {
+        log_error("Failed to open serial port");
+        return -1;
+    }
     if (pthread_create(&tid, NULL, updater_thread, targs)) {
         log_error("Failed to create updater thread");
         return -1;
@@ -148,7 +151,7 @@ int create_timer_callback(double sec, Leg **legs, Command *cmd) {
 }
 
 
-void set_sequence(point_t (*func)(int, int, Command *)) {
+void set_sequence(point_t (*func)(int, int)) {
     sequence_function = func;
     frame = 0;
 }

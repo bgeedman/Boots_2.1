@@ -36,7 +36,7 @@ typedef struct state_args {
     pthread_t tid;
     const char *address;
     short port;
-    Command *cmd;
+//    Command *cmd;
 }state_args;
 
 

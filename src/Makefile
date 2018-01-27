@@ -55,7 +55,7 @@ server.o: server.c server.h commands.pb-c.h logger.h
 states.o: states.c states.h leg.h logger.h server.h updater.h sequences.h commands.pb-c.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ states.c $(LIBS)
 
-updater.o: updater.c updater.h logger.h sequences.h leg.h kinematics.h commands.pb-c.h
+updater.o: updater.c updater.h logger.h sequences.h leg.h kinematics.h commands.pb-c.h tools.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ updater.c $(LIBS)
 
 sequences.o: sequences.c sequences.h leg.h logger.h commands.pb-c.h server.h

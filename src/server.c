@@ -14,7 +14,7 @@
 #include "logger.h"
 
 pthread_mutex_t cmd_mutex = PTHREAD_MUTEX_INITIALIZER;
-
+Command *command = NULL;
 
 
 static int read_n_bytes(int fd, int len, void *buf) {
@@ -28,7 +28,7 @@ static int read_n_bytes(int fd, int len, void *buf) {
 
 
 
-int create_server_thread(const char *address, short port, Command **cmd) {
+int create_server_thread(const char *address, short port) {//, Command **cmd) {
     struct serv_args_t *serv_a;
     int str_len;
     pthread_t tid;
@@ -43,7 +43,7 @@ int create_server_thread(const char *address, short port, Command **cmd) {
         goto FAIL;
     }
     serv_a->port = port;
-    serv_a->cmd = cmd;
+    //serv_a->cmd = cmd;
     strncpy(serv_a->address, address, str_len);
 
     if (pthread_create(&tid, NULL, server_thread, serv_a)) {
@@ -116,7 +116,8 @@ void *server_thread(void *args) {
             return NULL;
         }
         pthread_mutex_lock(&cmd_mutex);
-        *(arg->cmd) = command__unpack(NULL, bytes_read, buf);
+        //*(arg->cmd) = command__unpack(NULL, bytes_read, buf);
+        command = command__unpack(NULL, bytes_read, buf);
         pthread_mutex_unlock(&cmd_mutex);
     }
     close(conn_fd);

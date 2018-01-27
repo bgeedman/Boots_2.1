@@ -10,14 +10,15 @@
 
 struct update_thread_args {
     Leg **legs;
-    Command *cmd;
+    int fd;
+    //Command *cmd;
 };
 
 void callback(int signo, siginfo_t *info, void *context);
 
-int create_timer_callback(double sec, Leg **legs, Command *cmd);
+int create_timer_callback(double sec, Leg **legs);//, Command *cmd);
 void *updater_thread(void *);
-void set_sequence(point_t (*foo)(int, int, Command *));
+void set_sequence(point_t (*foo)(int, int));//, Command *));
 
 int set_timer_interval(double sec);
 
