@@ -6,7 +6,6 @@
 #include <signal.h>
 #include "leg.h"
 #include "sequences.h"
-#include "commands.pb-c.h"
 
 struct update_thread_args {
     Leg **legs;
@@ -16,9 +15,9 @@ struct update_thread_args {
 
 void callback(int signo, siginfo_t *info, void *context);
 
-int create_timer_callback(double sec, Leg **legs);//, Command *cmd);
+int create_timer_callback(double sec, Leg **legs);
 void *updater_thread(void *);
-void set_sequence(point_t (*foo)(int, int));//, Command *));
+void set_sequence(point_t (*foo)(int, Leg *leg));
 
 int set_timer_interval(double sec);
 

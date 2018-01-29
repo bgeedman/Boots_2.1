@@ -14,15 +14,16 @@
 #include "commands.pb-c.h"
 #include "tools.h"
 
-Command *command;
 
 
 #define BILLION 1000000000L
 
-static point_t (*sequence_function)(int, int);
-static int frame = 0;
+static point_t (*sequence_function)(int, Leg *);
 static sem_t updatesem;
 static timer_t timerid;
+
+Command *command;
+unsigned long frame;
 
 
 static int setinterrupt() {
@@ -66,28 +67,33 @@ void *updater_thread(void *data) {
     log_trace("Update thread");
     char buf[1024];
 
+/*
+ * Can check the return type and if it is {0,0,0}, don't set the end point or
+ * solve the kinematics.  That might save a few cycles.
+ */
     while (sem_wait(&updatesem) == 0) {
         log_debug("get next leg postiion");
 
         log_debug("updating leg positions for frame: %d", frame);
-        point_t epoint = sequence_function(frame, FRONT_LEFT);
+        point_t epoint = sequence_function(FRONT_LEFT, legs[FRONT_LEFT]);
 
         log_debug("FRONT_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[FRONT_LEFT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, FRONT_RIGHT);
+        epoint = sequence_function(FRONT_RIGHT, legs[FRONT_RIGHT]);
         log_debug("FRONT_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[FRONT_RIGHT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, BACK_LEFT);
+        epoint = sequence_function(BACK_LEFT, legs[BACK_LEFT]);
         log_debug("BACK_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[BACK_LEFT], epoint.x, epoint.y, epoint.z);
 
-        epoint = sequence_function(frame, BACK_RIGHT);
+        epoint = sequence_function(BACK_RIGHT, legs[BACK_RIGHT]);
         log_debug("BACK_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
         leg_set_end_point(legs[BACK_RIGHT], epoint.x, epoint.y, epoint.z);
 
         log_debug("solve kinematics");
+
         if ((kinematics_geometric(legs[FRONT_LEFT])) ||
             (kinematics_geometric(legs[FRONT_RIGHT])) ||
             (kinematics_geometric(legs[BACK_LEFT])) ||
@@ -100,6 +106,7 @@ void *updater_thread(void *data) {
             log_info("Sending command: %s", buf);
             write_command(buf);
         }
+
         frame++;
     }
     return NULL;
@@ -151,7 +158,8 @@ int create_timer_callback(double sec, Leg **legs) {
 }
 
 
-void set_sequence(point_t (*func)(int, int)) {
+//void set_sequence(point_t (*func)(int, int)) {
+void set_sequence(point_t (*func)(int, Leg*)) {
     sequence_function = func;
     frame = 0;
 }

@@ -102,12 +102,14 @@ int park_state(state_args *arg) {
 int stand_state(state_args *arg) {
     log_trace("Entering stand state");
     int cmd;
+    int dir;
     if (command == NULL) {
         log_warn("Something strange has happened");
         return STAND;
     }
     pthread_mutex_lock(&cmd_mutex);
     cmd = command->cmd;
+    dir = command->dir;
     pthread_mutex_unlock(&cmd_mutex);
 
     log_info("Current cmd: %s", commands[cmd]);
@@ -123,10 +125,19 @@ int stand_state(state_args *arg) {
             return STRETCH;
         case COMMAND__TYPE__TURN:
             log_debug("Set sequence STAND_TO_TURN");
+            if (dir == COMMAND__DIRECTION__LEFT) {
+                set_sequence(seq_stand_to_turn_left);
+            } else if (dir == COMMAND__DIRECTION__RIGHT) {
+                set_sequence(seq_stand_to_turn_right);
+            } else {
+                log_warn("Invalid direction detected: %d", dir);
+                return STAND;
+            }
             // check the direction and set the correct turn sequence
             return TURN;
         case COMMAND__TYPE__WALK:
             log_debug("Set sequence STAND_TO_WALK");
+            set_sequence(seq_stand_to_walk);
             return WALK;
         case COMMAND__TYPE__STOP:
             return STAND;
@@ -187,6 +198,7 @@ int walk_state(state_args *arg) {
     switch (cmd) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
+            set_sequence(seq_stop_and_center);
             return STAND;
         case COMMAND__TYPE__QUIT:
             log_debug("Quitting in current state");
