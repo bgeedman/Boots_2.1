@@ -21,11 +21,18 @@ message Command {
         LEFT = 2;
         RIGHT = 3;
     }
+
+    enum mode {
+        TROT = 0;
+        CRAWL = 1;
+        CREEP = 2;
+    }
     required type cmd = 1;
-    optional direction dir = 2;
-    optional float roll = 3;
-    optional float pitch = 4;
-    optional float yaw = 5;
-    optional int32 delta_x = 6;
-    optional int32 delta_y = 7;
+    required mode gait = 2;
+    optional direction dir = 3;
+    optional float roll = 4;
+    optional float pitch = 5;
+    optional float yaw = 6;
+    optional int32 delta_x = 7;
+    optional int32 delta_y = 8;
 }

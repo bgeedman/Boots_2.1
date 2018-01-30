@@ -15,17 +15,17 @@ import commands_pb2
 class Buttons(IntEnum):
     TRIGGER = 0
     THUMB = 1
+    AUX02 = 2
+    AUX03 = 3
     AUX06 = 6
     AUX07 = 7
     AUX11 = 11
-
 
 class Axis(IntEnum):
     ROLL = 0
     PITCH = 1
     YAW = 2
     AUX = 3
-
 
 class Cmds(IntEnum):
     STOP = 0
@@ -36,12 +36,16 @@ class Cmds(IntEnum):
     PARK = 5
     QUIT = 6
 
-
 class Dir(IntEnum):
     FORWARD = 0
     BACKWARD = 1
     LEFT = 2
     RIGHT = 3
+
+class Mode(IntEnum):
+    TROT = 0
+    CRAWL = 1
+    CREEP = 2
 
 
 '''
@@ -78,8 +82,11 @@ def run_joystick(server, name):
     sock = None
     port = 15000
 
+    modes = ["Trot", "Crawl", "Creep"]
+
     command = commands_pb2.Command()
     command.cmd = Cmds.STOP
+    command.gait = Mode.TROT
 
     joystick_count = pygame.joystick.get_count()
     if (joystick_count == 0):
@@ -127,12 +134,26 @@ def run_joystick(server, name):
                 elif (event.button == Buttons.AUX11):
                     command.cmd = Cmds.QUIT
                     done = True
+                elif (event.button == Buttons.AUX02):
+                    ''' Cycle Gait down'''
+                    if (command.gait == Mode.TROT):
+                        command.gait = Mode.CREEP
+                    else:
+                        command.gait -= 1
+                    logging.info("Setting gait to: {0}".format(modes[command.gait]))
+                elif (event.button == Buttons.AUX03):
+                    ''' Cycle gait up '''
+                    if (command.gait == Mode.CREEP):
+                        command.gait = Mode.TROT
+                    else:
+                        command.gait += 1
+                    logging.info("Setting gait to: {0}".format(modes[command.gait]))
                 elif (event.button == Buttons.AUX06):
                     command.cmd = Cmds.STAND
                 elif (event.button == Buttons.AUX07):
                     command.cmd = Cmds.PARK
                 else:
-                    logging.warning("Unhandled button down event")
+                    logging.warning("Unhandled button down event: {0}".format(event))
 
 
             '''
@@ -151,8 +172,10 @@ def run_joystick(server, name):
                     command.yaw = 0.0
                     command.delta_x = 0
                     command.delta_y = 0
+                elif (event.button == Buttons.AUX02 or event.button == Buttons.AUX03):
+                    pass
                 else:
-                    logging.warning("Unhandled button up event")
+                    logging.warning("Unhandled button up event: {0}".format(event))
 
 
             '''
@@ -247,8 +270,7 @@ def main():
     parser.add_argument('--server', help='server IP address to connect', type=str)
     args = parser.parse_args()
     logging.basicConfig(format='%(asctime)-15s [%(levelname)s]: %(message)s',
-                        level=logging.DEBUG);
-
+                        level=logging.INFO);
     if (args.keyboard):
         run_keyboard(args.server)
     else:

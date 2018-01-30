@@ -14,7 +14,7 @@ PROTO_C = /usr/bin/protoc-c
 all:
 	make clean
 	make protobuf
-	make tester
+	make testing
 
 default: all
 
@@ -69,6 +69,7 @@ clean:
 	-rm -f *.o
 	@echo "Cleaning up executables..."
 	-rm $(TARGET)
+	rm -f testing
 	@echo "Cleaning up protobuf files..."
 	-rm -f commands.pb-c.c
 	-rm -f commands.pb-c.h
