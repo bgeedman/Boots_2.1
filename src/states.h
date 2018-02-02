@@ -26,7 +26,6 @@
 
 #include <pthread.h>
 #include "leg.h"
-#include "commands.pb-c.h"
 
 #define STATES_H_VERSION "0.0.1"
 
@@ -36,7 +35,6 @@ typedef struct state_args {
     pthread_t tid;
     const char *address;
     short port;
-//    Command *cmd;
 }state_args;
 
 

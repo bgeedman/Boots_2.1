@@ -46,7 +46,7 @@ logger.o: logger.c logger.h
 servo.o: servo.c servo.h logger.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ servo.c $(LIBS)
 
-tools.o: tools.c tools.h logger.h
+tools.o: tools.c tools.h logger.h sequences.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ tools.c $(LIBS)
 
 server.o: server.c server.h commands.pb-c.h logger.h
@@ -58,7 +58,7 @@ states.o: states.c states.h leg.h logger.h server.h updater.h sequences.h comman
 updater.o: updater.c updater.h logger.h sequences.h leg.h kinematics.h commands.pb-c.h tools.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ updater.c $(LIBS)
 
-sequences.o: sequences.c sequences.h leg.h logger.h commands.pb-c.h server.h
+sequences.o: sequences.c sequences.h leg.h logger.h commands.pb-c.h server.h tools.h
 	$(CC) $(CFLAGS) $(IDIR) $(LDIR) -o $@ sequences.c $(LIBS)
 
 .PHONY: clean

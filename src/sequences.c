@@ -18,62 +18,89 @@
 Command *command;
 unsigned long frame = 0;
 
+#define UP 30
+#define DOWN 70
+
+static point_t *get_custom_sequence(point_t A, point_t B, point_t C, point_t D);
+
+/******************************************************************************
+ *                  PARKING SEQUENCE FUNCTIONS                                *
+ *****************************************************************************/
+
 point_t seq_unknown_to_park(int leg_num, Leg *leg) {
     log_trace("unknown_to_park: %d", frame);
-    static int NUMBER_OF_FRAMES = 0;
+    static int number_of_frames = 1;
+
     static point_t seq[] = {
-        {-150, 40, 30}, {150, 40, 30}, {-150, -50, 30}, {150, -40, 30}
+        {-150, 40, UP}, {150, 40, UP}, {-150, -40, UP}, {150, -40, UP}
     };
 
-    if (frame > NUMBER_OF_FRAMES) {
+    if (frame >= number_of_frames) {
         log_warn("Frame out of range");
-        frame = NUMBER_OF_FRAMES;
+        return (point_t){0, 0, 0};
     }
+
     return seq[4 * frame + leg_num];
 }
-
 
 
 
 point_t seq_park_to_stand(int leg_num, Leg *leg) {
     log_trace("park_to_stand: %d", frame);
-    static int NUMBER_OF_FRAMES = 6;
+    static int last_frame = 9;
 
     static point_t seq[] ={
-        {-150, 40, 30}, {150, 40, 30}, {-150, -40, 30}, {150, -40, 30},
-        {-175, 40, 15}, {175, 40, 15}, {-175, -40, 15}, {175, -40, 15},
-        {-200, 40, 0}, {200, 40, 0}, {-200, -40, 0}, {200, -40, 0},
-        {-200, 40, 0}, {200, 40, 0}, {-200, -40, 0}, {200, -40, 0},
-        {-120, 120, 0}, {120, 120, 0}, {-120, -120, 0}, {120, -120, 0},
-        {-120, 120, 35}, {120, 120, 35}, {-120, -120, 35}, {120, -120, 35},
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70}
+        /* FRONT_LEFT     FRONT_RIGHT       BACK_LEFT         BACK_RIGHT */
+        /*---------------------------------------------------------------*/
+        {-150, 40, UP}, {150, 40, UP}, {-150, -40, UP}, {150, -40, UP},
+        // raise the body a little bit
+        {-150, 40, DOWN}, {150, 40, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        // move the front left leg
+        {-150, 150, 0}, {150, 40, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 40, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        // move the front right leg
+        {-150, 150, DOWN}, {150, 150, 0}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        // move the back left leg
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, 0}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -40, DOWN},
+        // move the back right leg
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, 0},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN}
     };
 
-    if (frame > NUMBER_OF_FRAMES) {
+    if (frame > last_frame) {
         log_warn("Frame out of range");
-        frame = NUMBER_OF_FRAMES;
+        return (point_t){0, 0, 0};
     }
     return seq[4 * frame + leg_num];
 }
+
+
 
 
 point_t seq_stand_to_park(int leg_num, Leg *leg) {
     log_trace("stand_to_park: %d", frame);
-    static int NUMBER_OF_FRAMES = 8;
+    static int last_frame = 9;
 
     static point_t seq[] ={
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70},
-        {-120, 120, 35}, {120, 120, 35}, {-120, -120, 35}, {120, -120, 35},
-        {-120, 120, 0}, {120, 120, 0}, {-120, -120, 0}, {120, -120, 0},
-        {-200, 40, 0}, {200, 40, 0}, {-200, -40, 0}, {200, -40, 0},
-        {-200, 40, 0}, {200, 40, 0}, {-200, -40, 0}, {200, -40, 0},
-        {-175, 40, 15}, {175, 40, 15}, {-175, -40, 15}, {175, -40, 15},
-        {-150, 40, 30}, {150, 40, 30}, {-150, -40, 30}, {150, -40, 30},
+        /* FRONT_LEFT     FRONT_RIGHT       BACK_LEFT         BACK_RIGHT */
+        /*---------------------------------------------------------------*/
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, 0},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, 0}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 150, 0}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 150, DOWN}, {150, 40, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 150, 0}, {150, 40, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 40, DOWN}, {150, 40, DOWN}, {-150, -40, DOWN}, {150, -40, DOWN},
+        {-150, 40, UP}, {150, 40, UP}, {-150, -40, UP}, {150, -40, UP},
     };
 
-    if (frame > NUMBER_OF_FRAMES) {
+    if (frame > last_frame) {
         log_warn("Frame out of range");
-        frame = NUMBER_OF_FRAMES;
+        return (point_t){0, 0, 0};
     }
     return seq[4 * frame + leg_num];
 }
@@ -81,6 +108,11 @@ point_t seq_stand_to_park(int leg_num, Leg *leg) {
 
 
 
+
+
+/******************************************************************************
+ *                  STRETCH SEQUENCE FUNCTIONS                                *
+ *****************************************************************************/
 
 point_t seq_stand_to_stretch(int leg_num, Leg *leg) {
     float roll, pitch, yaw;
@@ -106,8 +138,10 @@ point_t seq_stand_to_stretch(int leg_num, Leg *leg) {
     log_info("Roll: %.2f, Pitch: %.2f, Yaw: %.2f, Delta_x: %d, Delta_y: %d",
             roll, pitch, yaw, delta_x, delta_y);
 
-        static point_t seq[] = {
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70}
+    static point_t seq[] = {
+        /* FRONT_LEFT     FRONT_RIGHT       BACK_LEFT         BACK_RIGHT */
+        /*---------------------------------------------------------------*/
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
     };
 
     // I should really only do this once
@@ -205,219 +239,120 @@ FAIL:
 }
 
 
-point_t seq_stand_to_turn_left(int leg_num, Leg *leg) {
-    log_trace("stand_to_turn_left: %d", frame);
-    static int NUMBER_OF_FRAMES = 42;
-    static point_t seq_trot[] = {
-        /* FRONT_LEFT        FRONT_RIGHT        BACK_LEFT       BACK_RIGHT -*/
-        {-150, 150, 100}, {150, 150, 100}, {-150, -150, 100}, {150, -150, 100},
-        /*---------------- MOVE FRONT RIGHT AND BACK LEFT ------------------*/
-        {-150, 150, 100}, {150, 150, 30}, {-150, -150, 30}, {150, -150, 100},
-        {-150, 150, 100}, {118, 176, 30}, {-118, -176, 30}, {150, -150, 100},
-        {-150, 150, 100}, {81, 196, 30}, {-81, -196, 30}, {150, -150, 100},
-        {-150, 150, 100}, {81, 196, 100}, {-81, -196, 100}, {150, -150, 100},
-        /*-----------------------------------------------------------------*/
-        /*----- NOW LIFT FRONT LEFT AND BACK RIGHT AND ROTATE BACK --------*/
-        {-150, 150, 30}, {81, 196, 100}, {-81, -196, 100}, {150, -150, 30},
-        {-150, 150, 30}, {118, 176, 100}, {-118, -176, 100}, {150, -150, 30},
-        {-150, 150, 30}, {150, 150, 100}, {-150, -150, 100}, {150, -150, 30},
-        {-150, 150, 100}, {150, 150, 100}, {-150, -150, 100}, {150, -150, 100},
-        /*-----------------------------------------------------------------*/
-    };
+
+/******************************************************************************
+ *                      TURNING SEQUENCE FUNCTIONS                            *
+ *****************************************************************************/
+
+point_t seq_stand_to_turn_left_trot(int leg_num, Leg *leg) {
+    log_trace("seq_stand_to_turn_left_trot: %d", frame);
+    static int last_frame = 6;
 
     static point_t seq[] = {
-        /* FRONT_LEFT        FRONT_RIGHT        BACK_LEFT       BACK_RIGHT -*/
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70},
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70},
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70},
-        /*-------------------- MOVE FRONT RIGHT FORWARD --------------------*/
-        {-118, 122, 70}, {114, 126, 70}, {-122, -118, 70}, {118, -122, 70},
-        {-116, 124, 70}, {107, 132, 50}, {-124, -116, 70}, {116, -124, 70},
-        {-114, 126, 70}, {100, 137, 30}, {-126, -114, 70}, {114, -126, 70},
-        {-111, 128, 70}, {92, 142, 30},  {-128, -111, 70}, {111, -128, 70},
-        {-109, 130, 70}, {85, 150, 30},  {-130, -109, 70}, {109, -130, 70},
-        {-107, 132, 70}, {77, 151, 30},  {-132, -107, 70}, {107, -132, 70},
-        {-104, 134, 70}, {69, 155, 30},  {-134, -104, 70}, {104, -134, 70},
-        {-102, 136, 70}, {61, 158, 30},  {-136, -102, 70}, {102, -136, 70},
-        {-100, 137, 70}, {52, 161, 50},  {-137, -100, 70}, {100, -137, 70},
-        {-97, 139,  70}, {44, 164, 70},  {-139, -97, 70},  {97, -139, 70},
+        /* FRONT_LEFT      FRONT_RIGHT      BACK_LEFT       BACK_RIGHT -*/
         /*-----------------------------------------------------------------*/
-        /*-------------------- MOVE BACK RIGHT FORWARD --------------------*/
-        {-95, 141, 70}, {47, 163, 70}, {-141, -95, 70}, {104, -134, 70},
-        {-92, 142, 70}, {50, 162, 70}, {-142, -92, 70}, {111, -128, 50},
-        {-90, 144, 70}, {52, 161, 70}, {-144, -90, 70}, {118, -122, 30},
-        {-87, 145, 70}, {55, 160, 70}, {-145, -87, 70}, {124, -116, 30},
-        {-85, 147, 70}, {58, 159, 70}, {-147, -85, 70}, {130, -109, 30},
-        {-82, 148, 70}, {61, 158, 70}, {-148, -82, 70}, {136, -102, 30},
-        {-80, 150, 70}, {64, 157, 70}, {-150, -80, 70}, {141, -95, 30},
-        {-77, 151, 70}, {66, 156, 70}, {-151, -77, 70}, {145, -87, 30},
-        {-74, 153, 70}, {69, 155, 70}, {-153, -74, 70}, {150, -80, 50},
-        {-72, 154, 70}, {72, 154, 70}, {-154, -72, 70}, {154, -72, 70},
-        /*-----------------------------------------------------------------*/
-        /*------------------- MOVE BACK LEFT BACKWARD ---------------------*/
-        {-69, 155, 70}, {74, 153, 70}, {-150, -80, 70}, {153, -74, 70},
-        {-66, 156, 70}, {77, 151, 70}, {-145, -87, 50}, {151, -77, 70},
-        {-64, 157, 70}, {80, 150, 70}, {-141, -95, 30}, {150, -80, 70},
-        {-61, 158, 70}, {82, 148, 70}, {-136, -102, 30}, {148, -82, 70},
-        {-58, 159, 70}, {85, 147, 70}, {-130, -109, 30}, {147, -85, 70},
-        {-55, 160, 70}, {87, 145, 70}, {-124, -116, 30}, {145, -87, 70},
-        {-52, 161, 70}, {90, 144, 70}, {-118, -122, 30}, {144, -90, 70},
-        {-50, 162, 70}, {92, 142, 70}, {-111, -128, 30}, {142, -92, 70},
-        {-47, 163, 70}, {95, 141, 70}, {-104, -134, 50}, {141, -95, 70},
-        {-44, 164, 70}, {97, 139, 70}, {-97, -139, 70}, {139, -97, 70},
-        /*-----------------------------------------------------------------*/
-        /*-------------------- MOVE FRONT LEFT BACKWARD -------------------*/
-        {-52, 161, 70}, {100, 137, 70}, {-100, -137, 70}, {137, -100, 70},
-        {-61, 158, 50}, {102, 136, 70}, {-102, -136, 70}, {136, -102, 70},
-        {-69, 155, 30}, {104, 134, 70}, {-104, -134, 70}, {134, -104, 70},
-        {-77, 151, 30}, {107, 132, 70}, {-107, -132, 70}, {132, -107, 70},
-        {-85, 147, 30}, {109, 130, 70}, {-109, -130, 70}, {130, -109, 70},
-        {-92, 142, 30}, {111, 128, 70}, {-111, -128, 70}, {128, -111, 70},
-        {-100, 137, 30}, {114, 126, 70}, {-114, -126, 70}, {126, -114, 70},
-        {-107, 132, 30}, {116, 124, 70}, {-116, -124, 70}, {124, -116, 70},
-        {-114, 126, 50}, {118, 122, 70}, {-118, -122, 70}, {122, -118, 70},
-        {-120, 120, 70}, {120, 120, 70}, {-120, -120, 70}, {120, -120, 70},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
+        /* MOVE FRONT RIGHT AND BACK LEFT */
+        {-150, 150, DOWN}, {150, 150, UP}, {-150, -150, UP}, {150, -150, DOWN},
+        {-150, 150, DOWN}, {83, 195, UP}, {-83, -195, UP}, {150, -150, DOWN},
+        {-150, 150, DOWN}, {83, 195, DOWN}, {-83, -195, DOWN}, {150, -150, DOWN},
+        /* LIFT FRONT LEFT AND BACK RIGHT AND ROTATE */
+        {-150, 150, UP}, {83, 195, DOWN}, {-83, -195, DOWN}, {150, -150, UP},
+        {-150, 150, UP}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, UP},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
         /*-----------------------------------------------------------------*/
     };
 
-
-    // lets try 30 shift...i may have the negative values all fucked up
-    // try adding in the front back shift
-    static point_t body_shift[] = {
-        {0, 0, 0},
-        {10, 10, 0},// start shift left // start shift back
-        {20, 20, 0},// end shift left    // end shift back
-        // lift front right
-        {20, 20, 0},
-        {20, 20, 0},
-        {20, 20, 0},
-        {20, 20, 0},
-        {20, 20, 0},
-        {20, 20, 0},
-        {20, 10, 0}, // start shift forward
-        {20, 0, 0},
-        {20, -10, 0},
-        {20, -20, 0}, // end front shift // end shift forward
-
-        // lift back right
-        {20, -20, 0},
-        {20, -20, 0},
-        {20, -20, 0},
-        {20, -20, 0},
-        {20, -20, 0},
-        {20, -20, 0},
-        {10, -20, 0}, // start right shift
-        {0, -20, 0},
-        {-10, -20, 0},
-        {-20, -20, 0}, // end right shift
-
-        // lift back left
-        {-20, -20, 0},
-        {-20, -20, 0},
-        {-20, -20, 0},
-        {-20, -20, 0},
-        {-20, -20, 0},
-        {-20, -20, 0},
-        {-20, -10, 0}, // start shift back
-        {-20, 0, 0},
-        {-20, 10, 0},
-        {-20, 20, 0}, // end shift back
-
-        // lift front left
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-20, 20, 0},
-        {-10, 10, 0}, // start left shift
-        {0, 0, 0}, // end center shift
-    };
-
-    if (frame > NUMBER_OF_FRAMES) {
-        log_warn("Frame out of range");
-        frame = NUMBER_OF_FRAMES;
-    }
-
-
-    gsl_matrix *trans = NULL;
-    gsl_matrix *pt = NULL;
-    gsl_matrix *tmp = NULL;
-    point_t ret = seq[4 * frame + leg_num];
-
-    point_t shift;
-
-
-    if ((trans = gsl_matrix_alloc(4, 4)) == NULL) {
-        log_warn("Failed to alloc space for tans matrix");
-        goto FAIL;
-    }
-    if ((pt = gsl_matrix_alloc(4, 1)) == NULL) {
-        log_warn("Failed to alloc space for tans matrix");
-        goto FAIL;
-    }
-    if ((tmp = gsl_matrix_alloc(4, 1)) == NULL) {
-        log_warn("Failed to alloc space for tans matrix");
-        goto FAIL;
-    }
-
-    shift = body_shift[frame];
-
-    gsl_matrix_set_identity(trans);
-    gsl_matrix_set(trans, 0, 3, shift.x);
-    gsl_matrix_set(trans, 1, 3, shift.y);
-    gsl_matrix_set(trans, 2, 3, shift.z);
-
-    gsl_matrix_set(pt, 0, 0, ret.x);
-    gsl_matrix_set(pt, 1, 0, ret.y);
-    gsl_matrix_set(pt, 2, 0, ret.z);
-    gsl_matrix_set(pt, 3, 0, 1);
-
-    gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0, trans, pt, 0.0, tmp);
-
-    ret.x = gsl_matrix_get(tmp, 0, 0);
-    ret.y = gsl_matrix_get(tmp, 1, 0);
-    ret.z = gsl_matrix_get(tmp, 2, 0);
-
-FAIL:
-    gsl_matrix_free(trans);
-    gsl_matrix_free(pt);
-    gsl_matrix_free(tmp);
-
-    return ret;
-}
-
-
-
-
-
-
-
-
-point_t seq_stand_to_turn_right(int leg_num, Leg *leg) {
-    log_trace("stand_to_turn_right: %d", frame);
-    static int NUMBER_OF_FRAMES = 8;
-    static point_t seq[] = {
-        {-150, 150, 100}, {150, 150, 100}, {-150, -150, 100}, {150, -150, 100},
-        /*---------------- MOVE FRONT LEFT AND BACK RIGHT ------------------*/
-        {-150, 150, 30}, {150, 150, 100}, {-150, -150, 100}, {150, -150, 30},
-        {-118, 176, 30}, {150, 150, 100}, {-150, -150, 100}, {118, -176, 30},
-        {-81, 196, 30}, {150, 150, 100}, {-150, -150, 100}, {81, -196, 30},
-        {-81, 196, 100}, {150, 150, 100}, {-150, -150, 100}, {81, -196, 100},
-        {-81, 196, 100}, {150, 150, 30}, {-150, -150, 30}, {81, -196, 100},
-        {-118, 176, 100}, {150, 150, 30}, {-150, -150, 30}, {118, -176, 100},
-        {-150, 150, 100}, {150, 150, 30}, {-150, -150, 30}, {150, -150, 100},
-        {-150, 150, 100}, {150, 150, 100}, {-150, -150, 100}, {150, -150, 100},
-    };
-    if (frame > NUMBER_OF_FRAMES) {
-        log_warn("Frame out of range");
-        frame = NUMBER_OF_FRAMES;
+    if (frame > last_frame) {
+        frame = 0;
     }
     return seq[4 * frame + leg_num];
 }
 
+
+point_t seq_stand_to_turn_right_trot(int leg_num, Leg *leg) {
+    log_trace("seq_stand_to_turn_right_trot: %d", frame);
+    static int last_frame = 6;
+    static point_t seq[] = {
+        /* FRONT_LEFT      FRONT_RIGHT      BACK_LEFT       BACK_RIGHT */
+        /*-----------------------------------------------------------------*/
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
+        /* LIFT FRONT LEFT AND BACK RIGHT */
+        {-150, 150, UP}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, UP},
+        {-83, 195, UP}, {150, 150, DOWN}, {-150, -150, DOWN}, {83, -195, UP},
+        {-83, 195, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {83, -195, DOWN},
+        /* LIFT FRONT RIGHT AND BACK LEFT AND ROTATE */
+        {-83, 195, DOWN}, {150, 150, UP}, {-150, -150, UP}, {83, -195, DOWN},
+        {-150, 150, DOWN}, {150, 150, UP}, {-150, -150, UP}, {150, -150, DOWN},
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
+        /*-----------------------------------------------------------------*/
+    };
+    if (frame > last_frame) {
+        frame = 0;
+    }
+    return seq[4 * frame + leg_num];
+}
+
+
+
+point_t seq_stand_to_turn_left_crawl(int leg_num, Leg *leg) {
+    return (point_t){0,0,0};
+}
+point_t seq_stand_to_turn_right_crawl(int leg_num, Leg *leg) {
+    return (point_t){0,0,0};
+}
+point_t seq_stand_to_turn_left_creep(int leg_num, Leg *leg) {
+    return (point_t){0,0,0};
+}
+point_t seq_stand_to_turn_right_creep(int leg_num, Leg *leg) {
+    return (point_t){0,0,0};
+}
+
+
+
+
+
+/******************************************************************************
+ *                          WALKING SEQUENCE FUNCTIONS                        *
+ *****************************************************************************/
+
+point_t seq_stand_to_walk_trot(int leg_num, Leg *leg) {
+    log_trace("stand_to_walk_trot: %d", frame);
+    static int last_frame = 11;
+/*
+ * step lenght of 80 initially... this might be a bit ambitious
+ * back position will be
+ */
+    static point_t seq[] = {
+        /* FRONT_LEFT        FRONT_RIGHT        BACK_LEFT       BACK_RIGHT   */
+        /*-------------------------------------------------------------------*/
+        {-150, 150, DOWN}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, DOWN},
+        {-150, 150, DOWN}, {150, 150, UP}, {-150, -150, UP}, {150, -150, DOWN},
+        {-150, 120, DOWN}, {150, 180, UP}, {-150, -120, UP}, {150, -180, DOWN},
+        {-150, 120, DOWN}, {150, 180, DOWN}, {-150, -120, DOWN}, {150, -180, DOWN},
+        /* LIFT FRONT LEFT AND BACK RIGHT MOVE FORWARD */
+        {-150, 120, UP}, {150, 165, DOWN}, {-150, -135, DOWN}, {150, -180, UP},
+        {-150, 150, UP}, {150, 150, DOWN}, {-150, -150, DOWN}, {150, -150, UP},
+        {-150, 180, UP}, {150, 135, DOWN}, {-150, -165, DOWN}, {150, -120, UP},
+        {-150, 180, DOWN}, {150, 120, DOWN}, {-150, -180, DOWN}, {150, -120, DOWN},
+        /* LIFT FRONT RIGHT AND BACK LEFT MOVE FOREWARD */
+        {-150, 165, DOWN}, {150, 120, UP}, {-150, -180, UP}, {150, -135, DOWN},
+        {-150, 150, DOWN}, {150, 150, UP}, {-150, -150, UP}, {150, -150, DOWN},
+        {-150, 135, DOWN}, {150, 180, UP}, {-150, -120, UP}, {150, -165, DOWN},
+        {-150, 120, DOWN}, {150, 180, DOWN}, {-150, -120, DOWN}, {150, -180, DOWN},
+        /*-------------------------------------------------------------------*/
+    };
+    if (frame > last_frame) {
+        frame = 4;
+    }
+    return seq[4 * frame + leg_num];
+}
+
+
+
+point_t seq_stand_to_walk_crawl(int leg_num, Leg *leg) {
+    return (point_t){0,0,0};
+}
 
 
 
@@ -429,7 +364,7 @@ point_t seq_stand_to_turn_right(int leg_num, Leg *leg) {
  *   Body shift right => move the FRONT_LEFT and BACK_LEFT legs further out and FRONT_RIGHT and BACK_RIGHT closer
  *   Body shift left => move the FRONT_RIGHT and BACK_RIGHT legs further out and FRONT_LEFT and BACK_LEFT closer
  */
-point_t seq_stand_to_walk(int leg_num, Leg *leg) {
+point_t seq_stand_to_walk_creep(int leg_num, Leg *leg) {
     log_trace("stand_to_walk: %d", frame);
     static int NUMBER_OF_FRAMES = 45;
     static point_t seq[] = {
@@ -502,41 +437,35 @@ point_t seq_stand_to_walk(int leg_num, Leg *leg) {
 }
 
 
+
+
+
+/******************************************************************************
+ *                      CENTERING SEQUENCE FUNCTIONS                          *
+ *****************************************************************************/
 point_t seq_stop_and_center(int leg_num, Leg *leg) {
     log_trace("stop_and_center: %d", frame);
-    static int NUMBER_OF_FRAMES = 12;
-    // first frame just drop all the feet to the ground
+
+    static int last_frame = 0;
+
+    static point_t leg_points[4];
+    static int centered[4];
+    static point_t *custom_seq = NULL;
+
+    //
+    // We'll just throw that on the TODO list
     static point_t seq[] = {
+        /* FRONT_LEFT        FRONT_RIGHT        BACK_LEFT       BACK_RIGHT  */
         /*---------------- DROP ALL THE FEET -------------------------------*/
-        {0, 0, 70},       {0, 0, 70},      {0, 0, 70},       {0, 0, 70},
-        /*---------------- CENTER FRONT LEFT -------------------------------*/
-        {0, 0, 30},       {0, 0, 70},      {0, 0, 70},       {0, 0, 70},
-        {-120, 120, 30},  {0, 0, 70},      {0, 0, 70},       {0, 0, 70},
-        {-120, 120, 70},  {0, 0, 70},      {0, 0, 70},       {0, 0, 70},
-        /*------------------------------------------------------------------*/
-        /*---------------- CENTER BACK RIGHT -------------------------------*/
-        {-120, 120, 70}, {0, 0, 70},      {0, 0, 30},        {0, 0, 70},
-        {-120, 120, 70}, {0, 0, 70},      {-120, -120, 30},  {0, 0, 70},
-        {-120, 120, 70}, {0, 0, 70},      {-120, -120, 70}, {0, 0, 70},
-        /*------------------------------------------------------------------*/
-        /*---------------- CENTER BACK LEFT --------------------------------*/
-        {-120, 120, 70}, {0, 0, 30},       {-120, -120, 70}, {0, 0, 70},
-        {-120, 120, 70}, {120, 120, 30},   {-120, -120, 70}, {0, 0, 70},
-        {-120, 120, 70}, {120, 120, 70},   {-120, -120, 70}, {0, 0, 70},
-        /*------------------------------------------------------------------*/
-        /*---------------- CENTER BACK RIGHT -------------------------------*/
-        {-120, 120, 70}, {120, 120, 70},  {-120, -120, 70}, {0, 0, 30},
-        {-120, 120, 70}, {120, 120, 70},  {-120, -120, 70}, {120, -120, 30},
-        {-120, 120, 70}, {120, 120, 70},  {-120, -120, 70}, {120, -120, 70},
-        /*------------------------------------------------------------------*/
+        {0, 0, DOWN},       {0, 0, DOWN},      {0, 0, DOWN},       {0, 0, DOWN},
     };
 
-    if (frame > NUMBER_OF_FRAMES) {
+    if (frame > last_frame) {
         log_warn("Frame out of range");
-        frame = NUMBER_OF_FRAMES;
+        return (point_t){0, 0, 0};
     }
-
     point_t pt = seq[4 * frame + leg_num];
+
     if (pt.x == 0) {
         pt.x = gsl_matrix_get(leg->world_end_point, 0, 0);
     }
@@ -546,5 +475,42 @@ point_t seq_stop_and_center(int leg_num, Leg *leg) {
     if (pt.z == 0) {
         pt.z = gsl_matrix_get(leg->world_end_point, 2, 0);
     }
-    return pt;
+
+    // If this is the first time that we are vising this sequence, we need
+    // to get the leg position for ALL the legs.  This will be used in the
+    // calculations of the centroid and HOPEFULLY, FINGERS CROSSED, will
+    // allow us to keep balance when putting the feet back in order
+    if (frame == 0) {
+        leg_points[leg_num].x = pt.x;
+        leg_points[leg_num].y = pt.x;
+        leg_points[leg_num].z = pt.x;
+        centered[leg_num] = 0;
+        return pt;
+    }
+    // we have generated a new sequence and are not done running it yet
+    if (custom_seq == NULL) {
+        custom_seq = get_custom_sequence(leg_points[FRONT_LEFT],
+                                        leg_points[FRONT_RIGHT],
+                                        leg_points[BACK_LEFT],
+                                        leg_points[BACK_RIGHT]);
+    }
+
+    return (point_t){0,0,0};
+}
+
+
+
+static point_t *get_custom_sequence(point_t A, point_t B, point_t C, point_t D) {
+    point_t Cabc = get_centroid_tri(A, B, C);
+    point_t Cabd = get_centroid_tri(A, B, D);
+    point_t Cacd = get_centroid_tri(A, C, D);
+    point_t Cbcd = get_centroid_tri(B, C, D);
+
+    point_t Cabcd = get_centroid_quad(Cabc, Cabd, Cacd, Cbcd);
+    if (Cabcd.z) {
+        log_fatal("FAiled to find centroid");
+    } else {
+        log_debug("FOUND CENTROID: (%d, %d)", Cabcd.x, Cabcd.y);
+    }
+    return NULL;
 }

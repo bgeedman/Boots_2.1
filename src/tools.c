@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "tools.h"
 #include "logger.h"
+#include "sequences.h"
 
 
 pthread_mutex_t log_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -23,7 +24,7 @@ void tools_matrix_print(char *label, gsl_matrix *matrix) {
     for (i = 0; i < (int)matrix->size1; i++) {
         for (j = 0; j < (int)matrix->size2; j++) {
             offset += snprintf(buf + offset, sizeof(buf) - offset, "%6.3g ",
-                              gsl_matrix_get(matrix, i, j));
+                    gsl_matrix_get(matrix, i, j));
         }
         offset += snprintf(buf+offset, sizeof(buf) - offset, "\n");
     }
@@ -85,4 +86,31 @@ int write_command(char *buf) {
     }
     while ((offset = write(fd, buf + offset, len - offset)));
     return 0;
+}
+
+
+point_t get_centroid_tri(point_t p1, point_t p2, point_t p3) {
+    point_t ret;
+    ret.x = ((p1.x + p2.x + p3.x) / 3);
+    ret.y = ((p1.y + p2.y + p3.y) / 3);
+    ret.z = 0;
+    return ret;
+}
+
+point_t get_centroid_quad(point_t p1, point_t p2, point_t p3, point_t p4) {
+    int s1_x, s1_y, s2_x, s2_y;
+    point_t ret = {0, 0, -1};
+    s1_x = p2.x - p1.x;     s1_y = p2.y - p1.y;
+    s2_x = p4.x - p3.x;     s2_y = p4.y - p3.y;
+
+    float s, t;
+    s = (-s1_y * (p1.x - p3.x) + s1_x * (p1.y - p3.y)) / (-s2_x * s1_y + s1_x * s2_y);
+    t = ( s2_x * (p1.y - p3.y) - s2_y * (p1.x - p3.x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1) {
+        ret.x = p1.x + (t * s1_x);
+        ret.y = p1.y + (t * s1_y);
+        ret.z = 0;
+    }
+    return ret;
 }

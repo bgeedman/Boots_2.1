@@ -57,30 +57,30 @@ int kinematics_geometric(Leg *leg) {
         theta = 0.0;
     }
 
-    log_debug("Theta: %.2f", theta);
+    /* log_debug("Theta: %.2f", theta); */
 
     length = solve_hypotenuse(x, y);
     LL = length - leg->coxa_len;
-    log_debug("Length: %.2f", length);
-    log_debug("LL: %.2f", LL); // this is without coxa...aka what we want
+    /* log_debug("Length: %.2f", length); */
+    /* log_debug("LL: %.2f", LL); // this is without coxa...aka what we want */
     tmp = ((LL * LL) + (z * z) - (leg->femur_len * leg->femur_len) - (leg->tibia_len * leg->tibia_len)) /
             (2 * leg->femur_len * leg->tibia_len);
-    log_debug("tmp: %2f", tmp);
+    /* log_debug("tmp: %2f", tmp); */
     if (tmp <= -1 || tmp >= 1) {
         log_warn("No solution should exists");
         return 1;
     }
     beta = radiansToDegrees(acosf(tmp));
-    log_debug("Beta: %.2f", beta);
+    /* log_debug("Beta: %.2f", beta); */
 
     alpha1 = radiansToDegrees(atan2f(LL, z));
-    log_debug("Alpha1: %.2f", alpha1);
+    /* log_debug("Alpha1: %.2f", alpha1); */
     HF = solve_hypotenuse(LL, z);
-    log_debug("HF: %.2f", HF);
+    /* log_debug("HF: %.2f", HF); */
     alpha2 = radiansToDegrees(law_of_cosines(leg->femur_len, HF, leg->tibia_len));
-    log_debug("Alpha2: %.2f", alpha2);
+    /* log_debug("Alpha2: %.2f", alpha2); */
     alpha = 90.0 - (alpha1 + alpha2);
-    log_debug("Alpha: %.2f", alpha);
+    /* log_debug("Alpha: %.2f", alpha); */
     leg_set_servo_angle(leg, SHOULDER, theta);
     leg_set_servo_angle(leg, FEMUR, alpha);
     leg_set_servo_angle(leg, TIBIA, beta);

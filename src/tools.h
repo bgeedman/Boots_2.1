@@ -10,7 +10,7 @@
 #include <math.h>
 #include <gsl/gsl_matrix.h>
 #include <pthread.h>
-
+#include "sequences.h"
 #include "leg.h"
 
 extern pthread_mutex_t log_mutex;
@@ -29,4 +29,6 @@ int open_serial_port(char *tty);
 
 int write_command(char *buf);
 
+point_t get_centroid_tri(point_t, point_t, point_t);
+point_t get_centroid_quad(point_t, point_t, point_t, point_t);
 #endif

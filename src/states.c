@@ -27,6 +27,7 @@ static const char *commands[] = {
 
 Command *command;
 
+
 int (*state_table[])(state_args *) = {
     setup_state,
     park_state,
@@ -36,6 +37,23 @@ int (*state_table[])(state_args *) = {
     turn_state,
     cleanup_state,
     end_state
+};
+
+
+
+static point_t (*turn_sequences[])(int, Leg *) = {
+    seq_stand_to_turn_left_trot,
+    seq_stand_to_turn_right_trot,
+    seq_stand_to_turn_left_crawl,
+    seq_stand_to_turn_right_crawl,
+    seq_stand_to_turn_left_creep,
+    seq_stand_to_turn_right_creep,
+};
+
+static point_t (*walk_sequences[])(int, Leg *) = {
+    seq_stand_to_walk_trot,
+    seq_stand_to_walk_crawl,
+    seq_stand_to_walk_creep,
 };
 
 
@@ -59,7 +77,7 @@ int setup_state(state_args *arg) {
     }
 
     log_info("Setting up timer callback...");
-    if (create_timer_callback(0.1, arg->legs)) {
+    if (create_timer_callback(LEG_SPEED_SEC, arg->legs)) {
         log_fatal("Failed to create timer callback");
         return END;
     }
@@ -103,6 +121,7 @@ int stand_state(state_args *arg) {
     log_trace("Entering stand state");
     int cmd;
     int dir;
+    int gait;
     if (command == NULL) {
         log_warn("Something strange has happened");
         return STAND;
@@ -110,6 +129,7 @@ int stand_state(state_args *arg) {
     pthread_mutex_lock(&cmd_mutex);
     cmd = command->cmd;
     dir = command->dir;
+    gait = command->gait;
     pthread_mutex_unlock(&cmd_mutex);
 
     log_info("Current cmd: %s", commands[cmd]);
@@ -119,31 +139,36 @@ int stand_state(state_args *arg) {
             log_info("Setting sequence stand_to_park");
             set_sequence(seq_stand_to_park);
             return PARK;
+
         case COMMAND__TYPE__STRETCH:
             log_debug("Set sequence STAND_TO_STRETCH");
             set_sequence(seq_stand_to_stretch);
             return STRETCH;
+
         case COMMAND__TYPE__TURN:
             log_debug("Set sequence STAND_TO_TURN");
             if (dir == COMMAND__DIRECTION__LEFT) {
-                set_sequence(seq_stand_to_turn_left);
+                set_sequence(turn_sequences[2 * gait + 0]); // index to table
             } else if (dir == COMMAND__DIRECTION__RIGHT) {
-                set_sequence(seq_stand_to_turn_right);
+                set_sequence(turn_sequences[2 * gait + 1]); // index to table
             } else {
                 log_warn("Invalid direction detected: %d", dir);
                 return STAND;
             }
-            // check the direction and set the correct turn sequence
             return TURN;
+
         case COMMAND__TYPE__WALK:
             log_debug("Set sequence STAND_TO_WALK");
-            set_sequence(seq_stand_to_walk);
+            set_sequence(walk_sequences[gait]);
             return WALK;
+
         case COMMAND__TYPE__STOP:
             return STAND;
+
         case COMMAND__TYPE__QUIT:
             log_debug("Quitting in current state");
             return CLEANUP;
+
         default:
             log_warn("Invalid for current state: STAND");
             return STAND;
@@ -229,6 +254,7 @@ int turn_state(state_args *arg) {
     switch (cmd) {
         case COMMAND__TYPE__STOP:
             log_debug("Set sequence to STOP_AND_CENTER");
+            set_sequence(seq_stop_and_center);
             return STAND;
         case COMMAND__TYPE__QUIT:
             log_debug("Quitting in current state");

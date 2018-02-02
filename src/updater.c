@@ -63,34 +63,26 @@ void callback(int signo, siginfo_t *info, void *context) {
 void *updater_thread(void *data) {
     struct update_thread_args *args = (struct update_thread_args *)data;
     Leg **legs = args->legs;
+    char buf[1024];
+    int i;
+    point_t epoint;
 
     log_trace("Update thread");
-    char buf[1024];
 
-/*
- * Can check the return type and if it is {0,0,0}, don't set the end point or
- * solve the kinematics.  That might save a few cycles.
- */
     while (sem_wait(&updatesem) == 0) {
-        log_debug("get next leg postiion");
-
-        log_debug("updating leg positions for frame: %d", frame);
-        point_t epoint = sequence_function(FRONT_LEFT, legs[FRONT_LEFT]);
-
-        log_debug("FRONT_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
-        leg_set_end_point(legs[FRONT_LEFT], epoint.x, epoint.y, epoint.z);
-
-        epoint = sequence_function(FRONT_RIGHT, legs[FRONT_RIGHT]);
-        log_debug("FRONT_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
-        leg_set_end_point(legs[FRONT_RIGHT], epoint.x, epoint.y, epoint.z);
-
-        epoint = sequence_function(BACK_LEFT, legs[BACK_LEFT]);
-        log_debug("BACK_LEFT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
-        leg_set_end_point(legs[BACK_LEFT], epoint.x, epoint.y, epoint.z);
-
-        epoint = sequence_function(BACK_RIGHT, legs[BACK_RIGHT]);
-        log_debug("BACK_RIGHT: (%d, %d, %d)", epoint.x, epoint.y, epoint.z);
-        leg_set_end_point(legs[BACK_RIGHT], epoint.x, epoint.y, epoint.z);
+        log_info("updating leg positions for frame: %d", frame);
+        for (i = 0; i < NUM_LEGS; i++) {
+            epoint = sequence_function(i, legs[i]);
+            if (epoint.x == 0 && epoint.y == 0 && epoint.z == 0) {
+                log_warn("Not updating %s", legs[i]->label);
+            } else {
+                log_debug("%s: (%d, %d, %d)", legs[i]->label,
+                                              epoint.x,
+                                              epoint.y,
+                                              epoint.z);
+                leg_set_end_point(legs[i], epoint.x, epoint.y, epoint.z);
+            }
+        }
 
         log_debug("solve kinematics");
 

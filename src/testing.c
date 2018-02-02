@@ -57,7 +57,10 @@ int main(int argc, char *argv[]) {
 
     printf("Everything should be succesfully created\n");
     leg_set_end_point(leg, x, y, z);
-    kinematics_geometric(leg);
+    if (kinematics_geometric(leg)) {
+        fprintf(stderr, "NO SOLUTION\n");
+        exit(EXIT_FAILURE);
+    }
     leg_generate_cmd(&leg, buf, 1);
     printf("Command: %s\n", buf);
     leg_destroy(leg);
