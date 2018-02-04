@@ -12,8 +12,8 @@
 enum {SHOULDER, FEMUR, TIBIA};
 enum {FRONT_LEFT, FRONT_RIGHT, BACK_LEFT, BACK_RIGHT};
 
-#define LEG_SPEED_SEC 0.5
-#define LEG_SPEED_MS 500
+#define LEG_SPEED_SEC 0.1
+#define LEG_SPEED_MS 100
 #define CMD_SIZE 1024
 
 typedef struct Leg {

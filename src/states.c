@@ -159,9 +159,11 @@ int stand_state(state_args *arg) {
 
         case COMMAND__TYPE__WALK:
             log_debug("Set sequence STAND_TO_WALK");
-            set_sequence(walk_sequences[gait]);
-            return WALK;
-
+            if (dir == COMMAND__DIRECTION__FORWARD) {
+                set_sequence(walk_sequences[gait]);
+                return WALK;
+            }
+            return STAND;
         case COMMAND__TYPE__STOP:
             return STAND;
 
