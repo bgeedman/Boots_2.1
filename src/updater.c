@@ -1,20 +1,19 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include <signal.h>
+#include <errno.h>
 #include <pthread.h>
 #include <semaphore.h>
-
-#include "updater.h"
-#include "leg.h"
-#include "kinematics.h"
-#include "sequences.h"
-#include "logger.h"
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 #include "commands.pb-c.h"
+#include "kinematics.h"
+#include "leg.h"
+#include "logger.h"
+#include "sequences.h"
 #include "tools.h"
-
-
+#include "updater.h"
 
 #define BILLION 1000000000L
 
@@ -28,6 +27,7 @@ unsigned long frame;
 
 static int setinterrupt() {
     struct sigaction act;
+
     act.sa_flags = SA_SIGINFO;
     act.sa_sigaction = callback;
     if ((sigemptyset(&act.sa_mask) == -1) ||
@@ -52,12 +52,13 @@ int set_timer_interval(double sec) {
     return timer_settime(timerid, 0, &value, NULL);
 }
 
-// timer callback function
+
 void callback(int signo, siginfo_t *info, void *context) {
     if (sem_post(&updatesem)) {
-        log_warn("failed to post to semaphore");
+        log_warn("Failed to post to semaphore");
     }
 }
+
 
 
 void *updater_thread(void *data) {
@@ -67,10 +68,8 @@ void *updater_thread(void *data) {
     int i;
     point_t epoint;
 
-    log_trace("Update thread");
-
     while (sem_wait(&updatesem) == 0) {
-        log_info("updating leg positions for frame: %d", frame);
+        log_debug("updating leg positions for frame: %d", frame);
         for (i = 0; i < NUM_LEGS; i++) {
             epoint = sequence_function(i, legs[i]);
             if (epoint.x == 0 && epoint.y == 0 && epoint.z == 0) {
@@ -84,73 +83,94 @@ void *updater_thread(void *data) {
             }
         }
 
-        log_debug("solve kinematics");
-
         if ((kinematics_geometric(legs[FRONT_LEFT])) ||
             (kinematics_geometric(legs[FRONT_RIGHT])) ||
             (kinematics_geometric(legs[BACK_LEFT])) ||
             (kinematics_geometric(legs[BACK_RIGHT]))) {
-            log_fatal("Failed to solve one of the kinematics");
-            log_fatal("Frame: %d", frame);
+            log_error("Failed to solve one of the kinematics");
+            log_error("Frame: %d", frame);
         } else {
-            log_debug("write command to SSC-32");
             leg_generate_cmd(legs, buf, NUM_LEGS);
-            log_info("Sending command: %s", buf);
+            log_debug("Sending command: %s", buf);
             write_command(buf);
         }
-
         frame++;
     }
+
     return NULL;
 }
+
 
 
 int create_timer_callback(double sec, Leg **legs) {
     pthread_t tid;
     struct update_thread_args *targs;
+    int error;
 
     if ((targs = malloc(sizeof(struct update_thread_args))) == NULL) {
-        log_error("Failed to malloc space for thread args");
+        error = errno;
+        log_fatal("Failed to malloc space for thread args: %s",
+                    strerror(errno));
+        errno = error;
         return -1;
     }
     targs->legs = legs;
 
 
     if (sem_init(&updatesem, 0, 0)) {
-        log_error("Failed to init semaphore");
+        error = errno;
+        log_fatal("Failed to init semaphore: %s", strerror(errno));
+        free(targs);
+        errno = error;
         return -1;
     }
+
     if (open_serial_port("/dev/ttyUSB0")) {
-        log_error("Failed to open serial port");
+        log_fatal("Failed to open serial port");
+        free(targs);
         return -1;
     }
+
     if (pthread_create(&tid, NULL, updater_thread, targs)) {
-        log_error("Failed to create updater thread");
+        error = errno;
+        log_fatal("Failed to create updater thread: %s", strerror(errno));
+        free(targs);
+        errno = error;
         return -1;
     }
+
     if (pthread_detach(tid)) {
-        log_error("Failed to detach updater thread");
+        error = errno;
+        log_fatal("Failed to detach updater thread: %s", strerror(errno));
+        free(targs);
+        errno = error;
         return -1;
     }
+
     if (setinterrupt()) {
-        log_error("Failed to setup interrupt handler");
+        log_fatal("Failed to setup interrupt handler");
+        free(targs);
         return -1;
     }
 
     if (timer_create(CLOCK_REALTIME, NULL, &timerid)) {
-        log_error("Failed to create timer");
+        error = errno;
+        log_fatal("Failed to create timer: %s", strerror(errno));
+        free(targs);
+        errno = error;
         return -1;
     }
 
     if (set_timer_interval(sec)) {
-        log_error("Failed to set timer interval");
+        log_fatal("Failed to set timer interval");
+        free(targs);
         return -1;
     }
+
     return 0;
 }
 
 
-//void set_sequence(point_t (*func)(int, int)) {
 void set_sequence(point_t (*func)(int, Leg*)) {
     sequence_function = func;
     frame = 0;

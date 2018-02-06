@@ -1,34 +1,10 @@
-/*
- * Defining a simple state machine for the differnt states robot can be in.
- * Each state function returns the next state that should be run and can return
- * itself to indicate a repeat.
- *
- * TODO: Need to figure out a way to do the state transitions. Maybe have
- * intermediate states that handle that and can't be interrupted until they
- * have finished running. For Example: When going from the STAND to the PARK
- * state, perhaps have a STAND_TO_PARK STATE
- *
- * STATE_TRANSITIONS:
- * ------------------
- * SETUP    -> CLEANUP, END
- * PARK     -> STAND, CLEANUP
- * STAND    -> PARK, STRETCH, TURN, WALK, CLEANUP
- * STRETCH  -> PARK, CLEANUP
- * WALK     -> PARK, CLEANUP
- * TURN     -> PARK, CLEANUP
- * CLEANUP  -> END
- * END      -> EXIT
- */
+#ifndef __STATES_H
+#define __STATES_H
 
-
-#ifndef STATES_H
-#define STATES_H
+#define __STATES_H_VERSION "0.0.1"
 
 #include <pthread.h>
 #include "leg.h"
-
-#define STATES_H_VERSION "0.0.1"
-
 
 typedef struct state_args {
     Leg **legs;
@@ -37,7 +13,7 @@ typedef struct state_args {
     short port;
 }state_args;
 
-
+extern int (*state_table[])(state_args *);
 
 enum {
     SETUP,
@@ -60,11 +36,8 @@ int turn_state(state_args *);
 int cleanup_state(state_args *);
 int end_state(state_args *);
 
-
-
 #define ENTRY_STATE SETUP
 #define EXIT_STATE EXIT
 
-extern int (*state_table[])(state_args *);
 
 #endif

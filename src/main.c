@@ -1,10 +1,10 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <pthread.h>
 #include <signal.h>
-#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "logger.h"
 #include "kinematics.h"
@@ -21,10 +21,8 @@ int main(int argc, char *argv[]) {
 
     sa.address = "127.0.0.1";
     sa.port = 15000;
-//    sa.cmd = NULL;
 
     log_set_lock(lock_logger);
-
 
     current_state = state_table[ENTRY_STATE];
     for (;;) {

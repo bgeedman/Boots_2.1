@@ -1,10 +1,10 @@
-#ifndef KINEMATICS_H
-#define KINEMATICS_H
+#ifndef __KINEMATICS_H
+#define __KINEMATICS_H
 
-#define KINEMATICS_VERSION "0.0.1";
+#define __KINEMATICS_VERSION "0.0.1";
 
 #include "leg.h"
 
-int kinematics_geometric(Leg *leg);
+int kinematics_geometric(Leg *);
 
 #endif

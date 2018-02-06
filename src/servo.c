@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "servo.h"
 #include "logger.h"
 
@@ -18,11 +18,14 @@
  */
 Servo *servo_create(const char *label, uint8_t pin) {
     Servo *servo;
+
     if ((servo = malloc(sizeof(Servo))) == NULL) {
         return NULL;
     }
+
     servo->label = label;
     servo->pin = pin;
+
     return servo;
 }
 
@@ -105,9 +108,9 @@ void servo_set_desired_position(Servo *servo, uint16_t pos) {
  * set_desired_position_function.
  */
 void servo_set_desired_angle(Servo *servo, float angle) {
-    servo->des_angle = angle;
-
     int position;
+
+    servo->des_angle = angle;
     position = servo->zero_position +
                 (servo->inverted * angle * SERVO_TICKS_PER_DEGREE);
     servo_set_desired_position(servo, position);
@@ -133,11 +136,28 @@ void servo_set_inverted(Servo *servo, uint8_t invert) {
 
 
 
+/*
+ * Function: servo_get_pin
+ * =======================
+ * Input:
+ *  servo - pointer to servo struct
+ * Return:
+ *  pin that servo is connected
+ */
 uint8_t servo_get_pin(Servo *servo) {
     return servo->pin;
 }
 
 
+
+/*
+ * Function: servo_get_position
+ * ============================
+ * Input:
+ *  servo - pointer to servo struct
+ * Output:
+ *  servo desired position
+ */
 uint16_t servo_get_position(Servo *servo) {
     return servo->des_position;
 }
@@ -157,42 +177,6 @@ float servo_get_angle(Servo *servo) {
 }
 
 
-
-/*
- * Function: servo_print_details
- * =============================
- * Input:
- *  servo - pointer to servo structure
- * Return: N/A
- *
- * This function prints a servo structure
- */
-void servo_print_details(Servo *servo) {
-    if (servo == NULL) {
-        log_info("Null Servo");
-        return;
-    }
-    char buf[1024];
-
-    snprintf(buf, sizeof(buf),
-            "\n------------------------------\n"
-            "%s servo\n"
-            "Pin: %d\n"
-            "Range: %d - %d\n"
-            "Desired Position: %d\n"
-            "Desired Angle: %.2f\n"
-            "\n------------------------------",
-            servo->label,
-            servo->pin,
-            servo->min_position,
-            servo->max_position,
-            servo->des_position,
-            servo->des_angle);
-    log_info(buf);
-}
-
-
-
 /*
  * Function: servo_destroy
  * =======================
@@ -205,5 +189,3 @@ void servo_print_details(Servo *servo) {
 void servo_destroy(Servo *servo) {
     free(servo);
 }
-
-

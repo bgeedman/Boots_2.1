@@ -8,7 +8,7 @@ LIBS = -lm -lgsl -lgslcblas -lprotobuf-c -pthread -lrt
 IDIR = -I$$HOME/gsl/include
 LDIR = -L$$HOME/gsl/lib
 PROTO = $$HOME/protobuf/bin/protoc
-PROTO_C = /usr/bin/protoc-c
+PROTO_C = /usr/local/bin/protoc-c
 
 
 all:

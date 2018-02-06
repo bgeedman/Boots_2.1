@@ -1,7 +1,7 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef __SERVER_H
+#define __SERVER_H
 
-#define SERVER_H_VERSION "0.0.1"
+#define __SERVER_H_VERSION "0.0.1"
 
 #include <pthread.h>
 #include "commands.pb-c.h"
@@ -12,11 +12,10 @@ extern Command *command;
 typedef struct serv_args_t {
     char *address;
     short port;
-//    Command **cmd;
 }serv_args_t;
 
 
-int create_server_thread(const char *address, short port);//, Command **cmd);
+int create_server_thread(const char *address, short port);
 void *server_thread(void *args);
 
 #endif

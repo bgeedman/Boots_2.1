@@ -1,10 +1,10 @@
+#include <gsl/gsl_blas.h>
+#include <gsl/gsl_errno.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <math.h>
-#include <gsl/gsl_errno.h>
-#include <gsl/gsl_blas.h>
+#include <unistd.h>
 #include "leg.h"
 #include "leg_constants.h"
 #include "logger.h"
@@ -26,18 +26,23 @@ static const char *labels[3] = {"Shoulder", "Femur", "Tibia"};
  */
 Leg *leg_create(const char *label) {
     Leg *leg;
+
     if ((leg = malloc(sizeof(Leg))) == NULL) {
         return NULL;
     }
+
     leg->label = label;
+
     if ((leg->servos = calloc(3, sizeof(Servo *))) == NULL) {
         free(leg);
         return NULL;
     }
+
     leg->rotation_matrix = NULL;
     leg->translation_matrix = NULL;
     leg->world_end_point = NULL;
     leg->local_end_point = NULL;
+
     return leg;
 }
 
@@ -294,41 +299,6 @@ void leg_destroy(Leg *leg) {
 }
 
 
-
-/*
- * Function: leg_print_details
- * ===========================
- * Input:
- *  leg - pointer to leg to print details for
- * Return: N/A
- *
- * This function prints a legs various fields
- *
- * TODO: Need to make the output a bit more appealing
- */
-void leg_print_details(Leg *leg) {
-    char buf[1024];
-    snprintf(buf, 1024,
-            "\n%s\n"
-            "Coxa: %d\n"
-            "Femur: %d\n"
-            "Tibia: %d",
-            leg->label,
-            leg->coxa_len,
-            leg->femur_len,
-            leg->tibia_len);
-    log_info(buf);
-    tools_matrix_print("Rotation Matrix", leg->rotation_matrix);
-    tools_matrix_print("Translation Matrix", leg->translation_matrix);
-    tools_matrix_print("World End Point Matrix:", leg->world_end_point);
-    tools_matrix_print("Local End Point Matrix:", leg->local_end_point);
-    servo_print_details(leg->servos[SHOULDER]);
-    servo_print_details(leg->servos[FEMUR]);
-    servo_print_details(leg->servos[TIBIA]);
-}
-
-
-
 /*
  * Function: leg_set_end_point
  * ===========================
@@ -365,11 +335,10 @@ int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z) {
         log_error("Failed to allocate tmp matrix\n");
         return 1;
     }
-    // translate
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0,
                     leg->translation_matrix, leg->world_end_point, 0.0,
                     tmp);
-    // rotate
+
     gsl_blas_dgemm(CblasNoTrans, CblasNoTrans, 1.0,
                     leg->rotation_matrix, tmp, 0.0, leg->local_end_point);
 
@@ -378,6 +347,16 @@ int leg_set_end_point(Leg *leg, int16_t x, int16_t y, int16_t z) {
 }
 
 
+
+/*
+ * Function: leg_get_servo_pin
+ * ===========================
+ * Input:
+ *  leg - pointer to leg structure
+ *  servo - servo int to query
+ * Return:
+ *  servo pin number
+ */
 int8_t leg_get_servo_pin(Leg *leg, int servo) {
     if (leg->servos[servo] != NULL) {
         return servo_get_pin(leg->servos[servo]);
@@ -386,6 +365,16 @@ int8_t leg_get_servo_pin(Leg *leg, int servo) {
 }
 
 
+
+/*
+ * Function: leg_get_servo_position
+ * ================================
+ * Input:
+ *  leg - pointer to leg structure
+ *  servo - servo in to query
+ * Return:
+ *  position of the servo
+ */
 int16_t leg_get_servo_position(Leg *leg, int servo) {
     if (leg->servos[servo] != NULL) {
         return servo_get_position(leg->servos[servo]);
@@ -453,6 +442,7 @@ int leg_init(Leg **legs) {
     }
 
 
+    log_info("Setting up Front Left leg values...");
     leg_set_rotation(legs[FRONT_LEFT], FRONT_LEFT_ROTATION);
     leg_set_translation(legs[FRONT_LEFT], FRONT_LEFT_DELTA_X,
                         FRONT_LEFT_DELTA_Y, FRONT_LEFT_DELTA_Z);
@@ -487,7 +477,7 @@ int leg_init(Leg **legs) {
     leg_set_servo_inverted(legs[FRONT_LEFT], TIBIA,
                         FRONT_LEFT_TIBIA_INVERTED);
 
-
+    log_info("Setting up Front Right leg values...");
     leg_set_rotation(legs[FRONT_RIGHT], FRONT_RIGHT_ROTATION);
     leg_set_translation(legs[FRONT_RIGHT], FRONT_RIGHT_DELTA_X,
                         FRONT_RIGHT_DELTA_Y, FRONT_RIGHT_DELTA_Z);
@@ -523,7 +513,7 @@ int leg_init(Leg **legs) {
                         FRONT_RIGHT_TIBIA_INVERTED);
 
 
-
+    log_info("Setting up Back Left leg values...");
     leg_set_rotation(legs[BACK_LEFT], BACK_LEFT_ROTATION);
     leg_set_translation(legs[BACK_LEFT], BACK_LEFT_DELTA_X,
                         BACK_LEFT_DELTA_Y, BACK_LEFT_DELTA_Z);
@@ -558,7 +548,7 @@ int leg_init(Leg **legs) {
     leg_set_servo_inverted(legs[BACK_LEFT], TIBIA,
                         BACK_LEFT_TIBIA_INVERTED);
 
-
+    log_info("Setting up Back Right leg values...");
     leg_set_rotation(legs[BACK_RIGHT], BACK_RIGHT_ROTATION);
     leg_set_translation(legs[BACK_RIGHT], BACK_RIGHT_DELTA_X,
                         BACK_RIGHT_DELTA_Y, BACK_RIGHT_DELTA_Z);
@@ -596,6 +586,7 @@ int leg_init(Leg **legs) {
     return 0;
 
 ABORT:
+    log_fatal("Failed to add servo for leg!");
     leg_destroy(legs[FRONT_LEFT]);
     leg_destroy(legs[FRONT_RIGHT]);
     leg_destroy(legs[BACK_LEFT]);

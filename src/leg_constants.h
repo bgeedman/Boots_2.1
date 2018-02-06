@@ -1,7 +1,7 @@
-#ifndef LEG_CONST_H
-#define LEG_CONST_H
+#ifndef __LEG_CONST_H
+#define __LEG_CONST_H
 
-#define LEG_CONST_VERSION "0.0.1";
+#define __LEG_CONST_VERSION "0.0.1";
 
 
 #define FRONT_LEFT_SHOULDER_PIN             27
